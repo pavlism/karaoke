@@ -1,0 +1,14 @@
+cd C:\WebApps\karaoke
+
+gcloud config set project karaoke-288918
+gcloud app deploy
+gcloud app browse
+gcloud app logs tail -s default
+
+
+
+		
+
+
+7742017046733452566
+trying to build a public API, was looking for a tutorial on how to do this using the app engine.

@@ -1,0 +1,70 @@
+function getCode(){
+	var url_string = window.location.href;
+	var url = new URL(url_string);
+	return url.searchParams.get("v");
+}
+function checkVariable(){
+	console.log("checkVariable");
+	
+	try {
+		debugger;
+		var div1 = $('#secondary-inner');
+		var div2 = $('#secondary');
+		window.youTubecode = getCode();
+		
+		if(!window.clickListenerAdded){
+			$(window).click(function() {
+				debugger;
+				window.clickListenerAdded = true;
+				checkCode();
+			});
+		}
+		
+		
+
+		test(div1, div2, youTubecode);
+	}
+	catch(err) {
+		debugger;
+		window.setTimeout(checkVariable,200);
+	}
+}
+
+var youTubeCode = "";
+var clickListenerAdded = false;
+window.setTimeout(checkVariable,100);
+
+function checkCode(){
+	debugger;
+	if(window.youTubecode === getCode()){
+		window.setTimeout(checkCode,100);
+	}else{
+		checkVariable();
+	}
+}
+
+async function test(div1, div2, youTubecode){	
+	
+	var url = "http://localhost:8080/api/test?youtubecode=" + youTubecode;
+	var response = await fetch(url, {
+		  method: "GET",
+	})
+
+	var data = await response.json();
+		console.log(data);
+	if(data[0].length ===0){
+		return false;
+	}
+	
+		$( ".MRP_test" ).empty();
+		var lines = data[0][0].lyrics.split('<br>');
+		var text = "";
+		for (i = 0; i < lines.length; i++) {
+			$('#secondary').append("<p class='MRP_test'>"+lines[i]+"</p>")
+			text += lines[i] + "\n";
+		}
+		//$('#secondary').text(text)
+		$('#secondary').css('fontSize','medium');
+		$('#secondary-inner').css('display','none');
+
+}
