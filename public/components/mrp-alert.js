@@ -41,7 +41,9 @@ MRPAlert_template.innerHTML = `
 		<h2 class="titleElement"></h2>
 		<div class="message"></div>
 		<div class="footer">
-			<mrp-button success>close</mrp-button>
+			<mrp-button id="close" success>close</mrp-button>
+			<mrp-button id="yes" success>Yes</mrp-button>
+			<mrp-button id="no" success>No</mrp-button>
 		</div>
 	</div>
 `
@@ -61,9 +63,21 @@ add events to listen for to close and show teh alert box
 		
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPAlert_template.content.cloneNode(true));
-
+		this.closeButton = this.shadowRoot.querySelector('#close');
+		this.yesButton = this.shadowRoot.querySelector('#yes');
+		this.noButton = this.shadowRoot.querySelector('#no');
+		
+		//setup default type - close only
+		this.yesButton.hide();
+		this.noButton.hide();
+		
 		Lib.Comp.setupDefualtProperties(this, 'div');
 		
+	}
+	setYesNo(){
+		this.closeButton.hide();
+		this.yesButton.show();
+		this.noButton.show();
 	}
 	changeHeader(header){
 		this.shadowRoot.querySelector(".titleElement").textContent = header;
@@ -78,13 +92,19 @@ add events to listen for to close and show teh alert box
 			return false;
 		}
 		
-		
-		
 		if(event.path[0].id === "alertButton_" + this.id || event.path[1].id === "alertButton_" + this.id){
-			this.triggerClose();
+			//this.triggerClose();
 		}
 		
 		var triggerObj = {element:this, event:event};
+
+		if(event.path[3].id === 'yes' || event.path[2] === 'yes'){
+			triggerObj.answer = 'yes';
+			this.close();
+		}else if(event.path[3].id === 'no' || event.path[2] === 'no'){
+			triggerObj.answer = 'no';
+			this.close();
+		}
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-alert_clcked',triggerObj);
@@ -93,8 +113,6 @@ add events to listen for to close and show teh alert box
 		}else{
 			EventBroker.trigger('mrp-alert_clcked',triggerObj);
 		}
-		
-
 	}
 	addTimer(){
 		debugger;
@@ -103,7 +121,9 @@ add events to listen for to close and show teh alert box
 		if(this.shadowRoot.querySelector(".hidden")!= null){
 			this.shadowRoot.querySelector(".hidden").className = 'alert';
 		}
-		
+	}
+	hide(){
+		this.close();
 	}
 	close(){
 		if(this.shadowRoot.querySelector(".alert")!= null){

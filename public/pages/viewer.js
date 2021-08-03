@@ -1,15 +1,243 @@
 const Viewer_template = document.createElement('template');
 Viewer_template.innerHTML = `
-	Viewer
-	<div id='lyrics'></div>
+	<div>
+		Select Playlist <mrp-drop-down id="Viewer_playListSelection"></mrp-drop-down>
+	</div>
+	<div id='lyrics' style="width: 25%;float: left;">
+		<mrp-marquee style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
+		<mrp-text-area primary id="lyricsBox"></mrp-text-area>
+		<mrp-button primary id="addLyrics" style="display: block;">Add Lyrics</mrp-button>
+	</div>
+	
+	<video id="videoPlayer" controls style="width: 75%;max-height: 800px;"></video>
+	
+	
+	<mrp-button primary id="startButton">Next</mrp-button>
+	<mrp-button primary id="playlistButton">Playlists</mrp-button>
+	<mrp-button primary id="randomizeButton">Randomize</mrp-button>
+	<mrp-button primary id="temp">temp</mrp-button>
 `
 class ViewerPage extends HTMLElement {
+	//TODO
+
+	//add in settings to lyrics texts
+	//add in volume settings for quiter or louder songs add in settings
+	
 	constructor() {
 		super();
+		
+		//<source src="http://localhost:8080/api/video" type="video/mp4">
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Viewer_template.content.cloneNode(true));
 
+		this.videoPlayer = this.shadowRoot.querySelector('#videoPlayer');
+		this.videoPlayer.addEventListener('ended',this.videoEnded,false);
+		this.lyricsdiv = this.shadowRoot.querySelector('#lyrics');
+		this.addLyricsButton = this.shadowRoot.querySelector('#addLyrics');
+		this.addLyricsBox = this.shadowRoot.querySelector('#lyricsBox');
+		this.lyricsObj = this.shadowRoot.querySelector('mrp-marquee');
+		this.playListBox = this.shadowRoot.querySelector('mrp-drop-down');
+		this.setupSavedPlayLists();
+		
+		//setup videp player events
+		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
+		this.videoPlayer.onpause  = function() {EventBroker.trigger('videoPaused', this)};
+		this.videoPlayer.onplay   = function() {EventBroker.trigger('videoPlayed', this)};
+		
+		EventBroker.listen("startButton_mrp-button_clicked", this, this.nextVideo);
+		EventBroker.listen("addLyrics_mrp-button_clicked", this, this.addLyrics);
+		EventBroker.listen("usePlayList", this, this.setSongList);
+		EventBroker.listen("newPlaylistAdded", this, this.setupSavedPlayLists);
+		EventBroker.listen("videoEnded", this, this.nextVideo);
+		EventBroker.listen("Viewer_playListSelection_mrp-drop-down_changed", this, this.setupPlayList);
+		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
+		EventBroker.listen("temp_mrp-button_clicked", this, this.temp);
+		EventBroker.listen("videoLoaded", this, this.startLyrics);
+		EventBroker.listen("videoPaused", this, this.videoPaused);
+		EventBroker.listen("videoPlayed", this, this.videoPlayed);
+
+		this.setupSongList();
+		this.songIndex = 0;
 	}
+	videoPaused(){
+		this.lyricsObj.pause();
+	}
+	videoPlayed(){
+		this.lyricsObj.unPause();
+	}
+	startLyrics(){
+		//The lyrics need to run ass long as the song is playing, but we the user too see some of the lyrics at the start of the video
+		//Th animation speed is based on how long the animation will last, so it needs to last less then the song and start before zero.
+		var duration = this.videoPlayer.duration;
+		var startingPoint = Math.round(duration*0.3) * -1;
+		duration = duration - startingPoint;
+		duration = Math.round(duration*0.75);
+		//duration = 10;
+		//startingPoint = 0;
+		this.lyricsObj.start(duration,startingPoint);
+	}
+	temp(){
+		this.lyricsObj.show();
+	}
+	showAddingLyrics(){
+		this.addLyricsButton.show();
+		this.addLyricsBox.show();
+		this.lyricsObj.hide();
+	}
+	hideAddingLyrics(){
+		this.addLyricsButton.hide();
+		this.addLyricsBox.hide();
+		this.lyricsObj.show();
+	}
+	getCurrentSongTitle(){
+		return this.songList[this.songIndex];
+	}
+	addLyrics(){
+		//get the current song name
+		//get some lyrics
+		
+		var songTitle = this.getCurrentSongTitle();
+		var lyrics = this.addLyricsBox.getValue();//.replaceAll('\n','\n\r');
+		var lyricInfo = {songTitle,lyrics};
+		
+		addSongLyrics(this, lyricInfo);
+		
+		async function addSongLyrics(component, data){
+			
+			var options = {};
+			options.method = 'POST';
+			options.body=JSON.stringify(data);
+			
+			options.headers={'Content-Type':'application/json'}
+			const response = await fetch('/api/addLyrics',options);
+			
+			if(response.status === 200){
+				component.setLyrics();
+			}else{
+				component.lyricsdiv.firstElementChild.innerText = "An error happened check the server"
+			}
+			component.addLyricsBox.setValue('')
+		}
+	}
+	setupSongList(){
+		var apiCall = 'api/songList';
+		
+		getSongList(this, apiCall);
+		
+		async function getSongList(component, apiCall){			
+			const response = await fetch(apiCall);
+			const data = await response.json();
+			
+			if(data){
+				component.setSongList(data);
+				component.fullSongList = data;
+			}
+		}
+	}
+	setSongList(list){
+		this.songList = list;
+		this.loadVideo();
+	}
+	setLyrics(){
+		var apiCall = 'api/lyrics?name=' + this.songList[this.songIndex];
+		
+		getLyrics(this, apiCall);
+		
+		async function getLyrics(component, apiCall){			
+			const response = await fetch(apiCall);
+			const data = await response.json();
+
+			if(data){
+				//Get the settings fromt the first line of the data
+				component.lyricsObj.addText(component.getCurrentSongTitle() + '\n\n' + data);
+				if(data === "Lyrics Missing"){
+					component.showAddingLyrics();
+				}else{
+					component.hideAddingLyrics();
+				}
+			}else{
+				component.lyricsdiv.firstElementChild.innerText = component.getCurrentSongTitle() + '\n\n' +'lyrics missing';
+				component.showAddingLyrics();
+			}
+		}
+	}
+	nextVideo(action){
+		this.songIndex++;
+		if(this.songIndex >= this.songList.length){
+			this.songIndex = 0;
+		}
+		this.loadVideo();
+	}
+	loadVideo(){
+		this.videoPlayer.src = "http://localhost:8080/api/video?name=" + this.songList[this.songIndex];
+		this.videoPlayer.autoplay = true;
+		
+		
+		
+		this.setLyrics();
+	}
+	
+	videoEnded(){
+		EventBroker.trigger("videoEnded", this);
+	}
+	setupSavedPlayLists(listJustAdded){
+		var apiCall = 'api/playlists';
+		
+		getPlayListList(this, apiCall, listJustAdded);
+		
+		async function getPlayListList(component, apiCall, listJustAdded){			
+			const response = await fetch(apiCall);
+			const data = await response.json();
+			
+			if(data){
+				component.playListList = data;
+				data.unshift("All");
+				component.playListBox.addList(data);
+				component.playListBox.sortAlphabetically();
+				
+				if(Lib.JS.isDefined(listJustAdded)){
+					component.playListBox.setValue(listJustAdded);
+				}
+			}
+		}
+	}
+	setupPlayList(){
+		
+		var playListName = this.playListBox.getValue()
+
+		if(playListName==="All"){
+			this.setSongList(this.fullSongList);
+			return false;
+		}
+		
+		var apiCall = 'api/playlist?name=' + playListName;
+		
+		getPlayList(this, apiCall);
+		
+		async function getPlayList(component, apiCall){			
+			const response = await fetch(apiCall);
+			const data = await response.json();
+
+			if(data){
+				component.setSongList(JSON.parse(data));
+			}else{
+			}
+		}
+	}
+	randomizeSongList(){
+
+		for(var randomCounter = 0;randomCounter<100;randomCounter++){
+			var R1 = Lib.JS.getRandomInt(0,this.songList.length-1);
+			var R2 = Lib.JS.getRandomInt(0,this.songList.length-1);
+			var temp = this.songList[R1];
+			this.songList[R1] = this.songList[R2];
+			this.songList[R2] = temp;
+		}
+		
+		this.loadVideo();
+	}
+
+
 }
 
 window.customElements.define('viewer-page', ViewerPage);

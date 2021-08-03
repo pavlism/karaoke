@@ -1,7 +1,7 @@
 const MRPTable_template = document.createElement('template');
 MRPTable_template.innerHTML = `
 	<style>
-				.hiddenTable{
+			.hiddenTable{
                 display: none;
             }
             .selectBox{
@@ -125,6 +125,12 @@ MRPTable_template.innerHTML = `
             table > tbody > tr.selected{
                 background-color: #efefef;
             }
+			table.hidden { 
+				display:none;
+            }
+			div.hidden { 
+				display:none;
+            }
 	</style>
 	<div class="search" style="display: inline-block;padding-left: 20px;"></div>
 	<div class="download" style="display: inline-block;padding-left: 20px;"></div>
@@ -138,12 +144,13 @@ MRPTable_template.innerHTML = `
 `
 
 //TODO 
+
+//add in the endabled/disabled functions
 // get download buttons to work
 //clean up the old code that is no longer used
 //get objects to work in cells
 //deal with button clicks in a cell
 //enfore an id for the table
-
 
 class MRPTable extends HTMLElement {
 	constructor() {
@@ -152,9 +159,16 @@ class MRPTable extends HTMLElement {
 		this.currentData = [];
 		
 		this.buttonEvents = {};
-		this.addEventListener('click',this.handleClick);
+		this.addEventListener('click',this._handleClick);
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPTable_template.content.cloneNode(true));
+		this.disabled = false;
+		
+		this.table = this.shadowRoot.querySelector('table');
+		this.searchDiv = this.shadowRoot.querySelector('div.search');
+		this.downloadDiv = this.shadowRoot.querySelector('div.download');
+		this.pagingDiv = this.shadowRoot.querySelector('div.paging');
+		
 		Lib.Comp.setupDefualtProperties(this, 'table');
 	}
 	loadData(data = []){
@@ -165,7 +179,7 @@ class MRPTable extends HTMLElement {
 		this.data = data;
 
 		//setup Pagin
-		this.handlePaging(this.data);
+		this._handlePaging(this.data);
 
 		//setup sorting stuff
 		if(this.getAttribute('sort')===""){
@@ -177,20 +191,20 @@ class MRPTable extends HTMLElement {
 			}
 			this.sortIsAsc = true;
 			
-			this.handleSort(this.sortCol);
+			this._handleSort(this.sortCol);
 		}else{
 			//add the rows and columns
-			this.setupData(this.data);
+			this._setupData(this.data);
 		}
 
 		//add the different options
-		this.handleSearch();
+		this._handleSearch();
 		
 		if(this.getAttribute('download')===""){
-			this.addDownloadButtons();
+			this._addDownloadButtons();
 		}
 	}
-	handlePaging(data, currentPage = 1){
+	_handlePaging(data, currentPage = 1){
 		if(this.getAttribute('pages')==null){
 			this.pageSize = -1;
 			return false;
@@ -212,24 +226,25 @@ class MRPTable extends HTMLElement {
 		
 		pagingText = pagingText + "<mrp-button primary id='"+this.id+"_prev'>Prev</mrp-button>";
 
-		pagingText = this.addPageButtons(this.numPages, pagingText);
+		pagingText = this._addPageButtons(this.numPages, pagingText);
 			
 		pagingText = pagingText + "<mrp-button primary primary id='"+this.id+"_next'>Next</mrp-button>";		
 		
-		this.shadowRoot.querySelector("div.paging").innerHTML = pagingText;
+		this.shadowRoot.querySelector("div.paging").innerHTML = pagingText;	
 
 		//setup button events
-		if(Lib.JS.isUndefined(this.prevClickedEvent)){
-			this.prevClickedEvent = EventBroker.listen(this.id + "_prev_mrp-button_clicked",this,this.prevClicked);
+		if(Lib.JS.isUndefined(this._prevClickedEvent)){
+			this._prevClickedEvent = EventBroker.listen(this.id + "_prev_mrp-button_clicked",this,this._prevClicked);
 		}
-		if(Lib.JS.isUndefined(this.nextClickedEvent)){
-			this.nextClickedEvent = EventBroker.listen(this.id + "_next_mrp-button_clicked",this,this.nextClicked);
+		if(Lib.JS.isUndefined(this._nextClickedEvent)){
+			this._nextClickedEvent = EventBroker.listen(this.id + "_next_mrp-button_clicked",this,this._nextClicked);
 		}
-		if(Lib.JS.isUndefined(this.pageClickedEvent)){
-			this.pageClickedEvent = EventBroker.listen(this.id + "_page_mrp-button_clicked",this,this.pageClicked);
+		if(Lib.JS.isUndefined(this._pageClickedEvent)){
+			this._pageClickedEvent = EventBroker.listen(this.id + "_page_mrp-button_clicked",this,this._pageClicked);
 		}
 	}
-	addPageButtons(numPages, pagingText){
+	_addPageButtons(numPages, pagingText){		
+		//setup for 9 buttons total
 		if(this.numPages ===1){
 			pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>1</mrp-button>";
 			return pagingText;
@@ -237,17 +252,21 @@ class MRPTable extends HTMLElement {
 		
 		var start = 1;
 		var end = this.numPages;
-		
-		//adding 1 buttons
+		//adding 1 button
 		if(1 === this.currentPage){
 			pagingText = pagingText + "<mrp-button success class='"+this.id+"_page'>1</mrp-button>";
 		}else{
 			pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>1</mrp-button>";
 		}
 		
+		
 		//adding extra buttons
-		if(this.numPages >=5){
+		if(this.numPages >=7){
 			start = this.currentPage - 2;
+
+			if(this.numPages - start <5){
+				start = this.numPages - 5;
+			}
 			
 			if(start < 2){
 				start = 2;
@@ -255,6 +274,13 @@ class MRPTable extends HTMLElement {
 			
 			end = start + 4;
 			
+			if(end > this.numPages-1){
+				end = this.numPages-1;
+			}
+		}else{
+			if(start < 2){
+				start = 2;
+			}
 			if(end > this.numPages-1){
 				end = this.numPages-1;
 			}
@@ -274,88 +300,87 @@ class MRPTable extends HTMLElement {
 			}else{
 				pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>"+this.numPages+"</mrp-button>";
 			}
-		}
-		
+		}		
 		return pagingText;
 	}
-	prevClicked(tableComponent){
-		if(tableComponent.currentPage !== 1){
-			tableComponent.currentPage = tableComponent.currentPage -1;
-			tableComponent.handlePaging(tableComponent.data, tableComponent.currentPage);
-			tableComponent.clearData();
-			tableComponent.setupData(tableComponent.data);
+	_prevClicked(){
+		if(this.currentPage !== 1){
+			this.currentPage = this.currentPage -1;
+			this._handlePaging(this.data, this.currentPage);
+			this._clearData();
+			this._setupData(this.data);
 		}
 	}
-	nextClicked(tableComponent){
-		if(tableComponent.currentPage !== tableComponent.numPages){
-			tableComponent.currentPage ++;
-			tableComponent.handlePaging(tableComponent.data, tableComponent.currentPage);
-			tableComponent.clearData();
-			tableComponent.setupData(tableComponent.data);
+	_nextClicked(){
+		if(this.currentPage !== this.numPages){
+			this.currentPage ++;
+			this._handlePaging(this.data, this.currentPage);
+			this._clearData();
+			this._setupData(this.data);
 		}
 	}
-	pageClicked(tableComponent, event){
-		tableComponent.currentPage = parseInt(event.element.innerText);
-		tableComponent.handlePaging(tableComponent.data, tableComponent.currentPage);
-		tableComponent.clearData();
-		tableComponent.setupData(tableComponent.data);
+	_pageClicked( event){
+		this.currentPage = parseInt(event.element.innerText);
+		this._handlePaging(this.data, this.currentPage);
+		this._clearData();
+		this._setupData(this.data);
 	}
 	
 	
-	handleSearch(){
+	_handleSearch(){
 		if(this.getAttribute('search')===""){
-			this.shadowRoot.querySelector("div.search").innerHTML = "Search:<mrp-text-box id='"+this.id+"_search'></mrp-text-box>"
+			this.shadowRoot.querySelector("div.search").innerHTML = "Search:<mrp-text-box id='"+this.id+"_search'></mrp-text-box>";
+			this.searchBox = this.shadowRoot.querySelector('#'+this.id+'_search');
 			
-			if(Lib.JS.isUndefined(this.searchChangedEvent)){
-				this.searchChangedEvent = EventBroker.listen(this.id + "_search_mrp-text-box_changed",this,this.searchChanged);
+			if(Lib.JS.isUndefined(this._searchChangedEvent)){
+				this._searchChangedEvent = EventBroker.listen(this.id + "_search_mrp-text-box_changed",this,this._searchChanged);
 			}
 		}
 		this.searchString = "";
 	}
-	searchChanged(tableComponent,event){
-		tableComponent.searchString = event.element.textContent + event.newValue;
+	_searchChanged(event){
+		this.searchString = event.element.textContent + event.newValue;
 
-		if(tableComponent.searchString ===""){
-			tableComponent.handlePaging(tableComponent.data, tableComponent.currentPage);
-			tableComponent.clearData();
-			tableComponent.setupData(tableComponent.data);
+		if(this.searchString ===""){
+			this._handlePaging(this.data, this.currentPage);
+			this._clearData();
+			this._setupData(this.data);
 			return false;
 		}
 		
-		tableComponent.currentData = [];
+		this.currentData = [];
 		var rowPassed = true;		
 		
-		tableComponent.currentData.push(tableComponent.data[0]);
+		this.currentData.push(this.data[0]);
 		
-		for (var rowCounter = 1; rowCounter < tableComponent.data.length; rowCounter++) {
+		for (var rowCounter = 1; rowCounter < this.data.length; rowCounter++) {
 			rowPassed = false;
-			for (var colCounter = 0; colCounter < tableComponent.numCol; colCounter++) {
-				if(tableComponent.data[rowCounter][colCounter]!==null && tableComponent.data[rowCounter][colCounter].toString().toLowerCase().indexOf(tableComponent.searchString.toLowerCase()) >= 0){
+			for (var colCounter = 0; colCounter < this.numCol; colCounter++) {
+				if(this.data[rowCounter][colCounter]!==null && this.data[rowCounter][colCounter].toString().toLowerCase().indexOf(this.searchString.toLowerCase()) >= 0){
 					rowPassed = true;
 					break;
 				}
 			}
 			
 			if(rowPassed){
-				tableComponent.currentData.push(tableComponent.data[rowCounter]);
+				this.currentData.push(this.data[rowCounter]);
 			}
 		}
-		tableComponent.handlePaging(tableComponent.currentData, tableComponent.currentPage);
-		tableComponent.clearData();
-		tableComponent.setupData(tableComponent.currentData);
+		this._handlePaging(this.currentData, this.currentPage);
+		this._clearData();
+		this._setupData(this.currentData);
 	}
-	
-	
-	
-	addDownloadButtons(){
+
+	_addDownloadButtons(){
 		this.shadowRoot.querySelector("div.download").innerHTML = "<mrp-button primary id=" + this.id + "_print_Current>Print Current</mrp-button>"
+		this.printBox = this.shadowRoot.querySelector('#'+this.id+'_print_Current');
 	}
-	clearData(){
+	_clearData(){
 		//var table = this.shadowRoot.querySelector("thead");
 		$(this.shadowRoot.querySelector("thead")).empty();
 		$(this.shadowRoot.querySelector("tbody")).empty();
 	}
-	setupData(data){
+	_setupData(data){
 		this.numCol = data[0].length;
 		
 		//setup the headers
@@ -387,11 +412,11 @@ class MRPTable extends HTMLElement {
 				end = data.length;
 			}
 		}
-		
 		var currentRow = 0;
 		
 		for (var rowCounter = start; rowCounter < end; rowCounter++) {
 			var row = this.shadowRoot.querySelector("tbody").insertRow(currentRow);
+			row.setAttribute('row-num',rowCounter);
 			currentRow++;
 			for (var colCounter = 0; colCounter < this.numCol; colCounter++) {
 				var cell = row.insertCell(colCounter);
@@ -399,8 +424,7 @@ class MRPTable extends HTMLElement {
 			}
 		}
 	}
-	printData_excel(data, filename="report.xlsl"){
-		debugger;
+	_printData_excel(filename="report.xlsl", data = this.data){
 		var wb = XLSX.utils.book_new();
 		wb.Props = {
                 Title: "SheetJS Tutorial",
@@ -443,7 +467,7 @@ class MRPTable extends HTMLElement {
 			}
 		}
 	}
-	printData(data, filename="report.csv") {
+	_printData(data, filename="report.csv") {
 		var processRow = function (row) {
 			var finalVal = '';
 			for (var j = 0; j < row.length; j++) {
@@ -484,17 +508,21 @@ class MRPTable extends HTMLElement {
 		}
 	}
 
-	handleClick(event){
+	_handleClick(event){
+		if(this.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
 		if(this.sort && !isNaN(parseInt(event.path[0].getAttribute('col')))){
 			//if the click was on a header and the sort option is true
-			this.handleSort(parseInt(event.path[0].getAttribute('col')));
+			this._handleSort(parseInt(event.path[0].getAttribute('col')));
 		}else if(event.path[1].id === this.id + "_print_Current" || event.path[0].id === this.id + "_print_Current"){
 			//if the click was on a print button
-			debugger;
 			if(this.currentData.length ===0){
-				this.printData(this.data);
+				this._printData(this.data);
 			}else{
-				this.printData(this.currentData);
+				this._printData(this.currentData);
 			}
 		}else if(event.path[1].id === this.id + "_print_All" || event.path[0].id === this.id + "_print_All"){
 			//if the click was on a print button
@@ -505,7 +533,7 @@ class MRPTable extends HTMLElement {
 		}
 		
 	
-		var triggerObj = {element:this, event:event, newValue:event.path[0].value, row:this.buildRowObject(event)};
+		var triggerObj = {element:this, event:event, newValue:event.path[0].value, row:this._buildRowObject(event)};
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-table_clicked',triggerObj);
@@ -515,8 +543,8 @@ class MRPTable extends HTMLElement {
 			EventBroker.trigger('mrp-table_clicked',triggerObj);
 		}
 	}
-	buildRowObject(event){
-		var rowNum = this.getRowClicked(event);
+	_buildRowObject(event){
+		var rowNum = this._getRowClicked(event);
 		
 		var row = {};
 		row.rowNum = rowNum;
@@ -534,17 +562,17 @@ class MRPTable extends HTMLElement {
 		}
 		return row;
 	}
-	getRowClicked(event){
+	_getRowClicked(event){
 		for (var pathCounter = 0; pathCounter < event.path.length; pathCounter++) {
 			//check for sort column 
 			if(Lib.JS.isDefined(event.path[pathCounter].getAttribute)){
-				if(!isNaN(parseInt(event.path[pathCounter].getAttribute('table-row')))){
-					return parseInt(event.path[pathCounter].getAttribute('table-row'));
+				if(!isNaN(parseInt(event.path[pathCounter].getAttribute('row-num')))){
+					return parseInt(event.path[pathCounter].getAttribute('row-num'));
 				}
 			}
 		}
 	}
-	handleSort(column){
+	_handleSort(column){
 		//check for aorting asc or desc
 		if(this.sortCol === column){
 			this.sortIsAsc = !this.sortIsAsc;
@@ -554,17 +582,17 @@ class MRPTable extends HTMLElement {
 		
 		var data = this.data.slice();
 		
-		var sortFunction = this.getsortFunction(column, this.sortIsAsc);
+		var sortFunction = this._getsortFunction(column, this.sortIsAsc);
 		var headers = data.shift();
         data.sort(sortFunction);
         this.data = [];
 		this.data.push(headers)
         this.data = this.data.concat(data);
 		
-		this.clearData();
-		this.setupData(this.data);
+		this._clearData();
+		this._setupData(this.data);
 	}
-	getsortFunction(sortIndex, isAsync) {
+	_getsortFunction(sortIndex, isAsync) {
         //The sort function  used to sort the columns
         var multipliyer = -1;
         if (isAsync) {
@@ -581,5 +609,47 @@ class MRPTable extends HTMLElement {
             return 0;
         };
     }
+	show(){
+		this.table.classList.remove('hidden');
+		this.searchDiv.classList.remove('hidden');
+		this.downloadDiv.classList.remove('hidden');
+		this.pagingDiv.classList.remove('hidden');
+	}
+	hide(){
+		this.table.classList.add('hidden');
+		this.searchDiv.classList.add('hidden');
+		this.downloadDiv.classList.add('hidden');
+		this.pagingDiv.classList.add('hidden');
+	}
+	disable(){
+		if(this.getAttribute('search')===""){
+			this.searchBox.disable();
+		}
+		if(this.getAttribute('download')===""){
+			this.printBox.disable();
+		}
+		if(this.getAttribute('pages')===""){
+			var buttons = this.shadowRoot.querySelectorAll('mrp-button');
+			for (var buttonCounter = 0; buttonCounter < buttons.length; buttonCounter++) {
+				buttons[buttonCounter].disable();
+			}
+		}
+		this.disabled = true;
+	}
+	enable(){
+		if(this.getAttribute('search')===""){
+			this.searchBox.enable();
+		}
+		if(this.getAttribute('download')===""){
+			this.printBox.enable();
+		}
+		if(this.getAttribute('pages')===""){
+			var buttons = this.shadowRoot.querySelectorAll('mrp-button');
+			for (var buttonCounter = 0; buttonCounter < buttons.length; buttonCounter++) {
+				buttons[buttonCounter].enable();
+			}
+		}
+		this.disabled = false;
+	}
 }
 window.customElements.define('mrp-table', MRPTable);

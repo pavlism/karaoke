@@ -22,8 +22,11 @@ MRPDropDown_template.innerHTML = `
 		border:1px solid #1ab394;
 		border-color: #1ab394 !important;
 	}
+	select.hidden { 
+		display:none;
+	}
 	</style>
-	<select></select>
+	<select></select><slot></slot>
 `
 
 //add in the adlity to set a defualt value
@@ -32,12 +35,13 @@ class MRPDropDown extends HTMLElement {
 	constructor() {
 		super();
 		
-		this.addEventListener('input',this.handleChange);
+		this.addEventListener('input',this._handleChange);
 			
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPDropDown_template.content.cloneNode(true));
 
 		Lib.Comp.setupDefualtProperties(this, 'select');
+		this.dropDown = this.shadowRoot.querySelector('select');
 		
 		if(this.getAttribute('value')==null){
 			this.value = "";
@@ -45,16 +49,22 @@ class MRPDropDown extends HTMLElement {
 			this.value = this.getAttribute('value');
 		}
 		
+		this.values = [];
+		if(this.getAttribute('values')!=null){
+			this.values = JSON.parse(this.getAttribute('values'));
+		}
+		
 		if(this.getAttribute('list')!=null){
 			this.list = JSON.parse(this.getAttribute('list'));
-			this.fillDropDown();
-		}	
+			this._fillDropDown();
+		}
+
 	}	
 	addList(list){
 		this.list = list;
-		this.fillDropDown();
+		this._fillDropDown();
 	}
-	fillDropDown(){
+	_fillDropDown(){
 		var htmlToR = [];
 		
 		if(this.value === ""){
@@ -64,18 +74,28 @@ class MRPDropDown extends HTMLElement {
 		var innerHTML = "";
 		
 		for (var optionCounter = 0; optionCounter < this.list.length; optionCounter++) {
+			var value = this.list[optionCounter];
+			var str = this.list[optionCounter];
+			
+			if(this.values.length >0 && this.values.length>optionCounter){
+				value = this.values[optionCounter];
+			}
+			
 			if(this.list[optionCounter] == this.value || this.index-1 === optionCounter){
 				this.value = this.list[optionCounter];
-				innerHTML =innerHTML + "<option value = '" + this.list[optionCounter] + "' selected>" + this.list[optionCounter] + "</option>"
-				//htmlToR.push(html`<option value = ${element.list[optionCounter]} selected>${element.list[optionCounter]}</option>`);
+				innerHTML =innerHTML + "<option value = '" + value.replaceAll("'","&#39;") + "' selected>" + str + "</option>"
 			}else{
-				innerHTML =innerHTML + "<option value = '" + this.list[optionCounter] + "'>" + this.list[optionCounter] + "</option>"
-				//htmlToR.push(html`<option value = ${element.list[optionCounter]}>${element.list[optionCounter]}</option>`);
+				innerHTML =innerHTML + "<option value = '" + value.replaceAll("'","&#39;") + "'>" + str + "</option>"
 			}
 		}
 		this.shadowRoot.querySelector("select").innerHTML = innerHTML;
 	}
-	handleChange(event){		
+	_handleChange(event){
+		if(this.dropDown.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
 		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
 		this.value = event.path[0].value;
 		
@@ -86,6 +106,42 @@ class MRPDropDown extends HTMLElement {
 		}else{
 			EventBroker.trigger('mrp-drop-down_changed',triggerObj);
 		}
+	}
+	getValue(){	
+		return this.value.replaceAll("&#39;","'");
+	}
+	setValue(newValue){	
+		if(this.value === newValue){
+			return false;
+		}
+		
+		for (var optionCounter = 0; optionCounter < this.list.length; optionCounter++) {
+			var value = this.list[optionCounter];
+			if(value === newValue){
+				this.shadowRoot.querySelector("select").children[optionCounter].selected = true;
+			}
+		}
+	}
+	sortAlphabetically(isAsc = true){
+		if(isAsc){
+			this.list.sort();
+		}else{
+			this.list.reverse();
+		}
+	}
+	hide(){
+		this.dropDown.classList.add('hidden');
+	}
+	show(){
+		this.dropDown.classList.remove('hidden');
+	}
+	disable(){
+		this.dropDown.disabled = true;
+		this.dropDown.style.backgroundColor = '#e5e6e7'
+	}
+	enable(){
+		this.dropDown.disabled = false;
+		this.dropDown.style.backgroundColor = '#ffffff'
 	}
 }
 window.customElements.define('mrp-drop-down', MRPDropDown);

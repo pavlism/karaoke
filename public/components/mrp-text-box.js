@@ -29,6 +29,9 @@ MRPTextBox_template.innerHTML = `
 			color:red;
 			margin-left: 5px;
 		}
+		input.hidden { 
+			display:none;
+		}
 	</style>
 	<input></input>
 	<span></span>
@@ -42,20 +45,37 @@ MRPTextBox_template.innerHTML = `
 class MRPTextBox extends HTMLElement {
 	constructor() {
 		super();
-		this.addEventListener('input',this.handleChange);
+		this.addEventListener('input',this._handleChange);
 			
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPTextBox_template.content.cloneNode(true));
 
 		Lib.Comp.setupDefualtProperties(this, 'input');
+		this.textBox = this.shadowRoot.querySelector('input');
 		
 		if(this.getAttribute('password')===""){
-			this.shadowRoot.querySelector('input').type = 'password'
+			this.textBox.type = 'password';
+		}
+
+		if(this.getAttribute('size') !== null){
+			this.textBox.size = this.getAttribute('size')
 		}
 		
-		//placeholder="${this.placeholder}" value="${this.value}"
+		if(this.getAttribute('place-holder') !== null){
+			this.textBox.placeholder = this.getAttribute('place-holder');
+		}
+		
+		if(this.getAttribute('max-length') !== null){
+			this.textBox.maxLength = this.getAttribute('max-length');
+		}
+		
+		if(this.getAttribute('regex') !== null){
+			this.regex = this.getAttribute('regex');
+		}
+		
+		this.value = '';
 	}
-	checkError(element, valid){
+	_checkError(element, valid){
 		var htmlToR = [];
 		
 		if(valid){
@@ -66,10 +86,10 @@ class MRPTextBox extends HTMLElement {
 		
 		return htmlToR;
 	}
-	checkValidity(){
+	_checkValidity(){
 		if (this.regex !== '') {
 			var text = this.currentText;
-			var regex = RegExp(this.regex);
+			var regex = new RegExp(this.regex);
 			if (!regex.test(text)) {
 				this.valid = false;
 			}else{
@@ -77,9 +97,14 @@ class MRPTextBox extends HTMLElement {
 			}
 		}
 	}
-	handleChange(event){
+	_handleChange(event){
+		if(this.textBox.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
 		this.currentText = event.path[0].value;
-		this.checkValidity();
+		this._checkValidity();
 		this.value = this.currentText;
 		
 		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
@@ -89,8 +114,36 @@ class MRPTextBox extends HTMLElement {
 		}else if(this['class'] !== ""){
 			EventBroker.trigger(this['class'] + '_mrp-text-box_changed',triggerObj);
 		}else{
-			EventBroker.trigger('mrp-mrp-text-box_changed',triggerObj);
+			EventBroker.trigger('mrp-text-box_changed',triggerObj);
 		}
+	}
+	addText(text){
+		this.shadowRoot.querySelector('input').value = text;
+		var event = {};
+		event.path = [];
+		event.path.push({value:text});
+		event.name = "addText()"
+		this._handleChange(event);
+	}
+	getValue(){	
+		return this.value;
+	}
+	setValue(text){	
+		this.addText(text);
+	}
+	disable(){
+		this.textBox.disabled = true;
+		this.textBox.style.backgroundColor = '#e5e6e7'
+	}
+	enable(){
+		this.textBox.disabled = false;
+		this.textBox.style.backgroundColor = '#ffffff'
+	}
+	hide(){
+		this.textBox.classList.add('hidden');
+	}
+	show(){
+		this.textBox.classList.remove('hidden');
 	}
 }
 

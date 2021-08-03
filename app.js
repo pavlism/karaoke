@@ -68,6 +68,137 @@ var logInfo = function(info){
 	});
 }
 
+app.get('/api/video', function(request, response) { 
+  const path = 'public/videos/' + request.query.name + '.mp4'
+  
+  console.log(path);
+  
+  const stat = fs.statSync(path)
+  const fileSize = stat.size
+  const range = request.headers.range
+  
+  
+  if (range) {
+    const parts = range.replace(/bytes=/, "").split("-")
+    const start = parseInt(parts[0], 10)
+    const end = parts[1] 
+      ? parseInt(parts[1], 10)
+      : fileSize-1
+    const chunksize = (end-start)+1
+    const file = fs.createReadStream(path, {start, end})
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+    }
+    response.writeHead(206, head);
+    file.pipe(response);
+  } else {
+    const head = {
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4',
+    }
+    response.writeHead(200, head)
+    fs.createReadStream(path).pipe(response)
+  }
+});
+app.post('/api/addLyrics',(request, response)=>{	
+	console.log('/api/lyrics');
+	
+	console.log(request.body.songTitle);
+	console.log(request.body.lyrics);
+	
+	fs.writeFile('public/lyrics/' + request.body.songTitle + '.txt', request.body.lyrics, (error) => {
+		if(error) {
+			response.json(error);
+		}else{
+			response.json('Lyrics Created');
+		}
+		response.end();
+	});
+});
+app.post('/api/addPlaylist',(request, response)=>{	
+	console.log('post addPlaylist');
+	
+	console.log(request.body.title);
+	console.log(request.body.list);
+	
+	fs.writeFile('public/playlists/' + request.body.title + '.txt', request.body.list, (error) => {
+		// throws an error, you could also catch it here
+		if(error) {
+			response.json(error);
+		}else{
+			response.json('PlayList Created');
+		}
+		response.end();
+	});
+});
+app.delete('/api/playList',(request, response)=>{	
+	console.log('delete playList');
+	console.log(request.body.title);
+
+	fs.unlink('public/playlists/' + request.body.title + '.txt', (err) => {
+		if (err) {
+			console.error(err)
+			return
+		}
+			response.json('PlayList Removed');
+	})
+	
+});
+app.get('/api/playlists',(request, response)=>{
+	console.log('get playlists');
+	
+	var playListList = [];
+	
+	fs.readdirSync('public/playlists/').forEach(fileName => {
+		if(fileName.search('txt') >0){
+			playListList.push(fileName.replace(".txt",""));
+		}
+	});
+
+	response.json(playListList);
+});
+app.get('/api/playlist',(request, response)=>{
+	console.log('/api/playlist');
+	
+	const path = 'public/playlists/' + request.query.name + '.txt'
+	
+	fs.readFile(path, (error, data) => {
+		if(error) {
+			response.json('playlist Missing');
+		}else{
+			response.json(data.toString());
+		}
+	});
+});
+app.get('/api/songList',(request, response)=>{
+	console.log('songList');
+	
+	var videoList = [];
+	
+	fs.readdirSync('public/videos/').forEach(fileName => {
+		if(fileName.search('mp4') >0){
+			videoList.push(fileName.replace(".mp4",""));
+		}
+	});
+
+	response.json(videoList);
+});
+app.get('/api/lyrics',(request, response)=>{
+	console.log('/api/lyrics');
+	
+	const path = 'public/lyrics/' + request.query.name + '.txt'
+	
+	fs.readFile(path, (error, data) => {
+		if(error) {
+			response.json('Lyrics Missing');
+		}else{
+			response.json(data.toString());
+		}
+	});
+});
 app.get('/api/login',(request, response)=>{
 	console.log('login');
 	console.log(request.query.username);
@@ -80,7 +211,6 @@ app.get('/api/login',(request, response)=>{
 		response.json(false);
 	}
 });
-
 app.get('/api/test',(request, response)=>{
 	console.log('login');
 	console.log(request.query.youtubecode);

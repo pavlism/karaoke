@@ -77,7 +77,7 @@ if (Lib.JS.isUndefined(EventBroker)) {
 
             for (listenerCounter = 0; listenerCounter < EventBroker.connections[event].length; listenerCounter++) {
                 var listener = EventBroker.connections[event][listenerCounter];
-                listener.callback(listener.listenerArgs, triggerArgs);
+                listener.callback.call(listener.listenerArgs, triggerArgs);
             }
         };
         //Used to remove a listeneter, used if you only want to listen to an event once

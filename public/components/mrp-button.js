@@ -78,6 +78,14 @@ MRPButton_template.innerHTML = `
                 background-color: #ed5565;
                 border-color: #ed5565;
             }
+			button.disabled{
+				background-color: #e5e6e7;
+                border-color: #e5e6e7;
+			}
+			button.disabled:hover {
+                background-color: #e5e6e7;
+                border-color: #e5e6e7;
+            } 
 
             button.large { 
                 padding: 10px 16px;
@@ -100,6 +108,9 @@ MRPButton_template.innerHTML = `
                 font-size: 12px;
                 line-height: 1.5;
             }
+			button.hidden { 
+				display:none;
+            }
 	</style>
 	<button><slot></slot></button>
 `
@@ -108,10 +119,11 @@ MRPButton_template.innerHTML = `
 class MRPButton extends HTMLElement {
 	constructor() {
 		super();
-		this.addEventListener('click',this.handleClick);
+		this.addEventListener('click',this._handleClick);
 		
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPButton_template.content.cloneNode(true));
+		this.button = this.shadowRoot.querySelector('button');
 
 		Lib.Comp.setupDefualtProperties(this, 'button');
 		
@@ -120,6 +132,8 @@ class MRPButton extends HTMLElement {
 		if(classname ==null){
 			classname = "";
 		}
+		
+		this['classname'] = classname;
 		
 		if(this.getAttribute('primary')===""){
 			classname = classname + " primary";
@@ -142,20 +156,42 @@ class MRPButton extends HTMLElement {
 		if(this.getAttribute('mini')===""){
 			classname = classname + " mini";
 		}
+		if(this.getAttribute('large')===""){
+			classname = classname + " large";
+		}
 		
 		this['class'] = classname;
 		this.shadowRoot.querySelector('button').className = classname;
 		
 	}
-	handleClick(event){
+	_handleClick(event){
+		if(this.button.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
 		var triggerObj = {element:this, event:event};
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-button_clicked',triggerObj);
-		}else if(this['class'] !== ""){
-			EventBroker.trigger(this['class'] + '_mrp-button_clicked',triggerObj);
+		}else if(this['classname'] !== ""){
+			EventBroker.trigger(this['classname'] + '_mrp-button_clicked',triggerObj);
 		}else{
 			EventBroker.trigger('mrp-button_clicked',triggerObj);
 		}
+	}
+	hide(){
+		this.button.classList.add('hidden');
+	}
+	show(){
+		this.button.classList.remove('hidden');
+	}
+	disable(){
+		this.button.disabled = true;
+		this.button.classList.add('disabled');
+	}
+	enable(){
+		this.button.disabled = false;
+		this.button.classList.remove('disabled');
 	}
 }
 

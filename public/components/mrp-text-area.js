@@ -1,88 +1,149 @@
-import { LitElement,css, html } from 'lit-element';
-
-
-
-class MRPTextArea extends LitElement {
-	static get styles() {
-    return css`
+const MRPTextArea_template = document.createElement('template');
+MRPTextArea_template.innerHTML = `
+	<style>
 		textarea{
-                background-color: #FFFFFF;
-                background-image: none;
-                border: 1px solid #e5e6e7;
-                border-radius: 1px;
-                color: inherit;
-                padding: 6px 12px;
-                transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
-                font-size: 14px;
-                line-height: 1.42857143;
-                box-shadow: none;
-                margin: 5px;
-                box-sizing: border-box;
-            }
+			background-color: #FFFFFF;
+			background-image: none;
+			border: 1px solid #e5e6e7;
+			border-radius: 1px;
+			color: inherit;
+			padding: 6px 12px;
+			transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+			font-size: 14px;
+			line-height: 1.42857143;
+			box-shadow: none;
+			margin: 5px;
+			box-sizing: border-box;
+		}
 
-            textarea:focus {
-                outline: none !important;
-                border:1px solid #1ab394;
-                border-color: #1ab394 !important;
-            }
-            textarea.error{
-                border: 1px solid red;
-                margin-bottom: 0px;
-            }
-            span{
-                color:red;
-                margin-left: 5px;
-            }
+		textarea:focus {
+			outline: none !important;
+			border:1px solid #1ab394;
+			border-color: #1ab394 !important;
+		}
+		textarea.error{
+			border: 1px solid red;
+			margin-bottom: 0px;
+		}
+		span{
+			color:red;
+			margin-left: 5px;
+		}
+		textarea.hidden { 
+			display:none;
+		}
+	</style>
+	<textarea></textarea>
     `;
-  }
-	static get properties() { 
-		var properties = {};
-		properties.id = {type: String};
-		properties['class'] = {type: String};
-		properties.regex = {type: String};
-		properties.name = {type: String};
-		properties.value = {type: String};
-		properties.valid = {type: Boolean};
-		properties.currentText = {type: String};
-		properties.placeholder = {type: String};
-		properties.rows = {type: String};
-		properties.cols = {type: String};
-		properties['error-msg'] = {type: String};
-		return properties;
-	}	
+	
+	
+class MRPTextArea extends HTMLElement {
 	constructor() {
 		super();
-		this.id = "";
-		this['class'] = "";
-		this.regex = "";
-		this.valid = true;
-		this.name = "";
-		this.value = "";
-		this.rows = "4";
-		this.cols = "50";
-		this.currentText = "";
-		this.placeholder = "";
-		this['error-msg'] = "";
-		this.addEventListener('input',this.handleChange);
-	}	
-	render(){
-		return html`
-			<textarea id = ${this.id} rows = ${this.rows} cols = ${this.cols} class=${this.class}></textarea>
-		`;
+		this.addEventListener('input',this._handleChange);
+			
+		this.attachShadow({mode:'open'});
+		this.shadowRoot.appendChild(MRPTextArea_template.content.cloneNode(true));
+		this.textArea = this.shadowRoot.querySelector('textarea');
+
+		Lib.Comp.setupDefualtProperties(this, 'textarea');
+		
+		if(this.getAttribute('rows')===""){
+			this.shadowRoot.querySelector('textarea').rows = this.getAttribute('rows');
+		}
+
+		if(this.getAttribute('cols') !== null){
+			this.shadowRoot.querySelector('textarea').cols = this.getAttribute('cols');
+		}
+		
+		if(this.getAttribute('place-holder') !== null){
+			this.shadowRoot.querySelector('textarea').placeholder = this.getAttribute('place-holder');
+		}
+		
+		if(this.getAttribute('max-length') !== null){
+			this.shadowRoot.querySelector('textarea').maxLength = this.getAttribute('max-length');
+		}
+		
+		if(this.getAttribute('max-length') !== null){
+			this.shadowRoot.querySelector('textarea').maxLength = this.getAttribute('max-length');
+		}
+		
+		if(this.getAttribute('regex') !== null){
+			this.regex = this.getAttribute('regex');
+		}
+		
+		this.value = '';
 	}
-	handleChange(event){
+	_checkError(element, valid){
+		var htmlToR = [];
+		
+		if(valid){
+			htmlToR.push(html``);
+		}else{
+			htmlToR.push(html`<br/><span>${element['error-msg']}</span>`);
+		}
+		
+		return htmlToR;
+	}
+	_checkValidity(){
+		if (this.regex !== '') {
+			var text = this.currentText;
+			var regex = new RegExp(this.regex);
+			if (!regex.test(text)) {
+				this.valid = false;
+			}else{
+				this.valid = true;
+			}
+		}
+	}
+	_handleChange(event){
+		if(this.textArea.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
 		this.currentText = event.path[0].value;
+		this._checkValidity();
 		this.value = this.currentText;
 		
 		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
 		
 		if(this.id !== ""){
-			EventBroker.trigger(this.id + '_mrp-drop-down_changed',triggerObj);
+			EventBroker.trigger(this.id + '_mrp-text-area_changed',triggerObj);
 		}else if(this['class'] !== ""){
-			EventBroker.trigger(this['class'] + '_mrp-drop-down_changed',triggerObj);
+			EventBroker.trigger(this['class'] + '_mrp-text-area_changed',triggerObj);
 		}else{
-			EventBroker.trigger('mrp-drop-down_changed',triggerObj);
+			EventBroker.trigger('mrp-text-area_changed',triggerObj);
 		}
 	}
+	addText(text){
+		this.shadowRoot.querySelector('textarea').value = text;
+		var event = {};
+		event.path = [];
+		event.path.push({value:text});
+		event.name = "addText()"
+		this._handleChange(event);
+	}
+	getValue(){	
+		return this.value;
+	}
+	setValue(text){	
+		this.addText(text);
+	}
+	hide(){
+		this.textArea.classList.add('hidden');
+	}
+	show(){
+		this.textArea.classList.remove('hidden');
+	}
+	disable(){
+		this.textArea.disabled = true;
+		this.textArea.style.backgroundColor = '#e5e6e7'
+	}
+	enable(){
+		this.textArea.disabled = false;
+		this.textArea.style.backgroundColor = '#ffffff'
+	}
 }
-customElements.define('mrp-text-area', MRPTextArea);
+
+window.customElements.define('mrp-text-area', MRPTextArea);

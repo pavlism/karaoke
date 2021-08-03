@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+//const mysql = require('mysql');
 
 // Database Connection for Production
 /*
@@ -24,6 +24,7 @@ let config = {
 }
 */
 
+/*
 let config = {};
 
 config.user = process.env.DB_USER;
@@ -63,5 +64,5 @@ connection.connect(function(err) {
 	}
 	console.log('Connected as thread id: ' + connection.threadId);
 });
-
-module.exports = connection;
+*/
+//module.exports = connection;

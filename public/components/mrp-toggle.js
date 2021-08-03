@@ -17,6 +17,9 @@ label {
 	border-radius: 100px;
 	position: relative;
 }
+label.disabled {
+	background: #e5e6e7;
+}
 
 label:after {
 	content: '';
@@ -28,11 +31,17 @@ label:after {
 	background: #fff;
 	border-radius: 90px;
 	transition: 0.3s;
-	content: " - Remember this";
+}
+label.disabled:after {
+	position: fixed;
 }
 
 input:checked + label {
 	background: red;
+}
+
+div.disabled {
+	color: #e5e6e7;
 }
 
 input:checked + label:after {
@@ -73,6 +82,9 @@ label:active:after {
   height: 100px;
   float: left;
 }
+div.hidden{
+	display:none;
+}
 
 
 // centering
@@ -84,7 +96,7 @@ body {
 }
 
 	</style>
-	<div class="container">
+	<div class="container" id='divContainer'>
 		<div class="question"><slot></slot></div>
 		<div class="text">no</div>
 		<div class="toggle">
@@ -97,12 +109,17 @@ body {
 class MRPToggle extends HTMLElement {
 	constructor() {
 		super();
-		this.addEventListener('click',this.handleClick);
+		this.addEventListener('click',this._handleClick);
 		
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPToggle_template.content.cloneNode(true));
 		
 		this.shadowRoot.querySelector('.question').style.width = this.getAttribute('width') + "px";
+
+		this.divContainer = this.shadowRoot.querySelector('#divContainer');
+		this.divText = this.shadowRoot.querySelector('.text');
+		this.label = this.shadowRoot.querySelector('label');
+		this.disabled = false;
 
 		Lib.Comp.setupDefualtProperties(this, 'input');
 		
@@ -116,10 +133,10 @@ class MRPToggle extends HTMLElement {
 			this.shadowRoot.querySelector('input').disabled = true;
 			this.disabled = true;
 		}
-		
 	}
-	handleClick(event){
+	_handleClick(event){
 		if(this.disabled){
+			event.preventDefault();
 			return false;
 		}
 		
@@ -144,6 +161,25 @@ class MRPToggle extends HTMLElement {
 		}else{
 			EventBroker.trigger('mrp-check-box_changed',triggerObj);
 		}
+	}
+	getValue(){	
+		return this.shadowRoot.querySelector('input').checked;
+	}
+	hide(){
+		this.divContainer.classList.add('hidden');
+	}
+	show(){
+		this.divContainer.classList.remove('hidden');
+	}
+	disable(){
+		this.disabled = true;
+		this.label.classList.add('disabled');
+		this.divText.classList.add('disabled');
+	}
+	enable(){
+		this.disabled = false;
+		this.label.classList.remove('disabled');
+		this.divText.classList.remove('disabled');
 	}
 }
 window.customElements.define('mrp-toggle', MRPToggle);
