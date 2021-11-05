@@ -68,6 +68,30 @@ var logInfo = function(info){
 	});
 }
 
+
+app.post('/api/changeSongTitle',(request, response)=>{	
+	console.log('post addPlaylist');
+	
+	console.log(request.body.newTitle);
+	console.log(request.body.oldTitle);
+	
+	
+	if (fs.existsSync('public/lyrics/' + request.body.oldTitle + '.txt')) {
+		fs.rename('public/lyrics/' + request.body.oldTitle + '.txt', 'public/lyrics/' + request.body.newTitle + '.txt', function(error) {
+
+		});
+	}
+
+	fs.rename('public/videos/' + request.body.oldTitle + '.mp4', 'public/videos/' + request.body.newTitle + '.mp4', function(error) {
+		if(error) {
+			response.json(error);
+		}else{
+			response.json('PlayList Created');
+		}
+		response.end();
+	});
+
+});
 app.get('/api/video', function(request, response) { 
   const path = 'public/videos/' + request.query.name + '.mp4'
   

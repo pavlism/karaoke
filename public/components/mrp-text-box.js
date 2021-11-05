@@ -73,6 +73,10 @@ class MRPTextBox extends HTMLElement {
 			this.regex = this.getAttribute('regex');
 		}
 		
+		if(this.getAttribute('number') !== null){
+			this.textBox.type = 'number';
+		}
+		
 		this.value = '';
 	}
 	_checkError(element, valid){

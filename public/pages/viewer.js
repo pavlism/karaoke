@@ -5,6 +5,7 @@ Viewer_template.innerHTML = `
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
 		<mrp-marquee style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
+		<div id="songTitleForAddLyrics"></div>
 		<mrp-text-area primary id="lyricsBox"></mrp-text-area>
 		<mrp-button primary id="addLyrics" style="display: block;">Add Lyrics</mrp-button>
 	</div>
@@ -19,9 +20,17 @@ Viewer_template.innerHTML = `
 `
 class ViewerPage extends HTMLElement {
 	//TODO
-
-	//add in settings to lyrics texts
-	//add in volume settings for quiter or louder songs add in settings
+	
+	
+	
+	//add in pause between songs
+	
+	//add restart song button
+	//add in setting for start time of lyrics
+	//add in pause features
+	//pause should prob be taken from total time
+	//change the setting to have a speed setting instead of the songe lenght and starting point
+	
 	
 	constructor() {
 		super();
@@ -35,9 +44,12 @@ class ViewerPage extends HTMLElement {
 		this.lyricsdiv = this.shadowRoot.querySelector('#lyrics');
 		this.addLyricsButton = this.shadowRoot.querySelector('#addLyrics');
 		this.addLyricsBox = this.shadowRoot.querySelector('#lyricsBox');
+		this.songTitleForAddLyrics = this.shadowRoot.querySelector('#songTitleForAddLyrics');
 		this.lyricsObj = this.shadowRoot.querySelector('mrp-marquee');
 		this.playListBox = this.shadowRoot.querySelector('mrp-drop-down');
 		this.setupSavedPlayLists();
+		
+		this.songSettings = SongSettings.createEmpty();
 		
 		//setup videp player events
 		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
@@ -52,9 +64,12 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("Viewer_playListSelection_mrp-drop-down_changed", this, this.setupPlayList);
 		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
 		EventBroker.listen("temp_mrp-button_clicked", this, this.temp);
-		EventBroker.listen("videoLoaded", this, this.startLyrics);
+		EventBroker.listen("videoLoaded", this, this.startVideo);
 		EventBroker.listen("videoPaused", this, this.videoPaused);
 		EventBroker.listen("videoPlayed", this, this.videoPlayed);
+		EventBroker.listen("updateLyrics", this, this.updateLyrics);
+		EventBroker.listen("PlaylistUpdate", this, this.updatePlaylist);
+		EventBroker.listen("songTitleChanged", this, this.setupSongList);
 
 		this.setupSongList();
 		this.songIndex = 0;
@@ -65,16 +80,12 @@ class ViewerPage extends HTMLElement {
 	videoPlayed(){
 		this.lyricsObj.unPause();
 	}
-	startLyrics(){
-		//The lyrics need to run ass long as the song is playing, but we the user too see some of the lyrics at the start of the video
-		//Th animation speed is based on how long the animation will last, so it needs to last less then the song and start before zero.
-		var duration = this.videoPlayer.duration;
-		var startingPoint = Math.round(duration*0.3) * -1;
-		duration = duration - startingPoint;
-		duration = Math.round(duration*0.75);
-		//duration = 10;
-		//startingPoint = 0;
-		this.lyricsObj.start(duration,startingPoint);
+	startVideo(){
+		this.lyricsObj.addText(this.getCurrentSongTitle() + '\n\n' + this.songSettings.lyrics);
+		this.lyricsObj.start(this.songSettings.getDuration(),this.songSettings.getStartingPoint());
+		
+		//set voloume
+		this.videoPlayer.volume = this.songSettings.volume/100; 
 	}
 	temp(){
 		this.lyricsObj.show();
@@ -83,6 +94,7 @@ class ViewerPage extends HTMLElement {
 		this.addLyricsButton.show();
 		this.addLyricsBox.show();
 		this.lyricsObj.hide();
+		this.songTitleForAddLyrics.innerText = this.getCurrentSongTitle()
 	}
 	hideAddingLyrics(){
 		this.addLyricsButton.hide();
@@ -92,12 +104,20 @@ class ViewerPage extends HTMLElement {
 	getCurrentSongTitle(){
 		return this.songList[this.songIndex];
 	}
+	updateLyrics(newLyrics){
+		var songTitle = this.getCurrentSongTitle();
+		var lyrics = newLyrics;
+		this.addLyricsToDB(songTitle,lyrics);
+	}
 	addLyrics(){
 		//get the current song name
 		//get some lyrics
 		
 		var songTitle = this.getCurrentSongTitle();
-		var lyrics = this.addLyricsBox.getValue();//.replaceAll('\n','\n\r');
+		var lyrics = this.addLyricsBox.getValue();
+		this.addLyricsToDB(songTitle,lyrics);
+	}
+	addLyricsToDB(songTitle, lyrics){
 		var lyricInfo = {songTitle,lyrics};
 		
 		addSongLyrics(this, lyricInfo);
@@ -148,8 +168,11 @@ class ViewerPage extends HTMLElement {
 			const data = await response.json();
 
 			if(data){
+				
+				component.songSettings = new SongSettings(data, component.videoPlayer);
+				
 				//Get the settings fromt the first line of the data
-				component.lyricsObj.addText(component.getCurrentSongTitle() + '\n\n' + data);
+
 				if(data === "Lyrics Missing"){
 					component.showAddingLyrics();
 				}else{
@@ -236,8 +259,13 @@ class ViewerPage extends HTMLElement {
 		
 		this.loadVideo();
 	}
-
-
+	updatePlaylist(playlistInfo){
+		debugger;
+		//if the current list is updated
+		if(this.playListBox.getValue() == playlistInfo.title){
+			
+		}
+	}
 }
 
 window.customElements.define('viewer-page', ViewerPage);

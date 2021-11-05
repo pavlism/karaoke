@@ -94,7 +94,16 @@ class MRPMarquee extends HTMLElement {
 		this.isPaused = false;
 		
 		//since the animation doesn't go all the way up for some reason I need to adjust the height of the inner div
-		var numLines = this.text.split('\n').length;
+		var numLines = 0;
+		
+		var lines = this.text.split('\n');
+		for(var lineCounter =0;lineCounter<lines.length;lineCounter++){
+			numLines++;
+			if(lines[lineCounter].length>45){
+				numLines++;
+			}
+		}
+		
 		var newHeight = 110 + Math.round((numLines - 56)/3*10);
 		this.lyricsDiv.style.height = newHeight + '%';
 	}

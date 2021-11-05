@@ -50,6 +50,7 @@ class MRPDropDown extends HTMLElement {
 		}
 		
 		this.values = [];
+		this.selectionIndex = -1;
 		if(this.getAttribute('values')!=null){
 			this.values = JSON.parse(this.getAttribute('values'));
 		}
@@ -83,9 +84,10 @@ class MRPDropDown extends HTMLElement {
 			
 			if(this.list[optionCounter] == this.value || this.index-1 === optionCounter){
 				this.value = this.list[optionCounter];
-				innerHTML =innerHTML + "<option value = '" + value.replaceAll("'","&#39;") + "' selected>" + str + "</option>"
+				this.selectionIndex = optionCounter;
+				innerHTML =innerHTML + "<option index = "+optionCounter+" value = '" + value.replaceAll("'","&#39;") + "' selected>" + str + "</option>"
 			}else{
-				innerHTML =innerHTML + "<option value = '" + value.replaceAll("'","&#39;") + "'>" + str + "</option>"
+				innerHTML =innerHTML + "<option index = "+optionCounter+" value = '" + value.replaceAll("'","&#39;") + "'>" + str + "</option>"
 			}
 		}
 		this.shadowRoot.querySelector("select").innerHTML = innerHTML;
@@ -98,6 +100,7 @@ class MRPDropDown extends HTMLElement {
 		
 		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
 		this.value = event.path[0].value;
+		this.selectionIndex = this.dropDown.selectedIndex;
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-drop-down_changed',triggerObj);
@@ -121,6 +124,10 @@ class MRPDropDown extends HTMLElement {
 				this.shadowRoot.querySelector("select").children[optionCounter].selected = true;
 			}
 		}
+	}
+	updateCurrentSelection(newValue){
+		this.list[this.selectionIndex] = newValue;
+		this._fillDropDown();
 	}
 	sortAlphabetically(isAsc = true){
 		if(isAsc){

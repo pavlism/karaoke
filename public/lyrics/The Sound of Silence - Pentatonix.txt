@@ -1,3 +1,4 @@
+{"duration":238,"startingPoint":-73,"volume":100}
 Hello darkness, my old friend
 I've come to talk with you again
 Because a vision softly creeping
