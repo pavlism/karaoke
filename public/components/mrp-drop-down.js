@@ -26,10 +26,17 @@ MRPDropDown_template.innerHTML = `
 		display:none;
 	}
 	</style>
-	<select></select><slot></slot>
+	<select></select><mrp-text-box width='100px'></mrp-text-box><datalist></datalist><slot></slot>
 `
 
+
+//change index to mrp box
+//setup length for both options
 //add in the adlity to set a defualt value
+
+//test all the function of both options
+
+
 
 class MRPDropDown extends HTMLElement {
 	constructor() {
@@ -42,11 +49,29 @@ class MRPDropDown extends HTMLElement {
 
 		Lib.Comp.setupDefualtProperties(this, 'select');
 		this.dropDown = this.shadowRoot.querySelector('select');
+		this.input = this.shadowRoot.querySelector('mrp-text-box');
+		this.datalist = this.shadowRoot.querySelector('datalist');
+		this.searchable = false;
 		
 		if(this.getAttribute('value')==null){
 			this.value = "";
 		}else{
 			this.value = this.getAttribute('value');
+		}
+		
+		if(this.getAttribute('width') !== null){
+			this.input.setAttribute('width',this.getAttribute('width'));
+		}
+		
+		if(this.getAttribute('searchable')===""){
+			this.dropDown.remove();
+			this.searchable = true;
+			this.datalist.id = this.getAttribute('id') + '_datalist_MRPDropDown';
+			debugger;
+			this.input.addList(this.datalist);
+		}else{
+			this.datalist.remove();
+			this.input.remove();
 		}
 		
 		this.values = [];
@@ -82,15 +107,28 @@ class MRPDropDown extends HTMLElement {
 				value = this.values[optionCounter];
 			}
 			
+			//create the new option
+			var newOption = document.createElement("option");
+			newOption.value = value.replaceAll("'","&#39;");
+			newOption.setAttribute('id',optionCounter);			
+			
+			//if a defualt value is selected
 			if(this.list[optionCounter] == this.value || this.index-1 === optionCounter){
 				this.value = this.list[optionCounter];
 				this.selectionIndex = optionCounter;
-				innerHTML =innerHTML + "<option index = "+optionCounter+" value = '" + value.replaceAll("'","&#39;") + "' selected>" + str + "</option>"
+				newOption.selected = true;
 			}else{
-				innerHTML =innerHTML + "<option index = "+optionCounter+" value = '" + value.replaceAll("'","&#39;") + "'>" + str + "</option>"
+				newOption.selected = false;
+			}
+			
+			//if searchable then use the data list else use the dropDown list
+			if(this.searchable){
+				this.datalist.insertAdjacentElement('beforeEnd',newOption);
+			}else{
+				newOption.text = newOption.value;
+				this.dropDown.insertAdjacentElement('beforeEnd',newOption);
 			}
 		}
-		this.shadowRoot.querySelector("select").innerHTML = innerHTML;
 	}
 	_handleChange(event){
 		if(this.dropDown.disabled){
@@ -111,9 +149,11 @@ class MRPDropDown extends HTMLElement {
 		}
 	}
 	getValue(){	
+		debugger;
 		return this.value.replaceAll("&#39;","'");
 	}
-	setValue(newValue){	
+	setValue(newValue){
+		debugger;
 		if(this.value === newValue){
 			return false;
 		}

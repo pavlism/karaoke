@@ -2,6 +2,7 @@ const Index_template = document.createElement('template');
 Index_template.innerHTML = `
 	<viewer-page></viewer-page>
 	<playlist-page></playlist-page>
+	<main-menu-page></main-menu-page>
 `
 class IndexPage extends HTMLElement {
 	constructor() {
@@ -11,19 +12,31 @@ class IndexPage extends HTMLElement {
 			
 		this.playListPage = this.shadowRoot.querySelector('playlist-page');
 		this.viewPage = this.shadowRoot.querySelector('viewer-page');
-		this.playListPage.hidden = true
+		this.mainMenuPage = this.shadowRoot.querySelector('main-menu-page');
+		this.playListPage.hidden = true;
+		this.viewPage.hidden = true;
 		
+		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.showViewerScreen);
 		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.showPlaylistScreen);
-		EventBroker.listen("saveButton_mrp-button_clicked", this, this.showViewerScreen);
+		EventBroker.listen("adminButton_mrp-button_clicked", this, this.showPlaylistScreen);
+		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.showViewerScreen);
+
 	}
 
 	showPlaylistScreen(){
 		this.viewPage.hidden = true;
 		this.playListPage.hidden = false;
+		this.mainMenuPage.hidden = true;
 	}
 	showViewerScreen(){
 		this.viewPage.hidden = false;
 		this.playListPage.hidden = true;
+		this.mainMenuPage.hidden = true;
+	}
+	showMainMenu(){
+		this.viewPage.hidden = true;
+		this.playListPage.hidden = true;
+		this.mainMenuPage.hidden = false;
 	}
 }
 

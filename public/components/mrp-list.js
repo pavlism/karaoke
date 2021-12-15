@@ -98,10 +98,10 @@ class MRPList extends HTMLElement {
 		return this.list;
 	}
 	hide(){
-		this.listUL.classList.add('hidden');
+		this.style.display = "none";
 	}
 	show(){
-		this.listUL.classList.remove('hidden');
+		this.style.display = "";
 	}
 	disable(){
 		this.listUL.disabled = true;

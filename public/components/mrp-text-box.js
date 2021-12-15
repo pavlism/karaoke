@@ -61,6 +61,10 @@ class MRPTextBox extends HTMLElement {
 			this.textBox.size = this.getAttribute('size')
 		}
 		
+		if(this.getAttribute('width') !== null){
+			this.textBox.style.width = this.getAttribute('width');
+		}
+		
 		if(this.getAttribute('place-holder') !== null){
 			this.textBox.placeholder = this.getAttribute('place-holder');
 		}
@@ -78,6 +82,14 @@ class MRPTextBox extends HTMLElement {
 		}
 		
 		this.value = '';
+	}
+	static get observedAttributes() {
+		debugger;
+		return ['width'];
+    }
+
+	attributeChangedCallback(name, oldValue, newValue) {
+		this.textBox.style.width = newValue;
 	}
 	_checkError(element, valid){
 		var htmlToR = [];
@@ -120,6 +132,10 @@ class MRPTextBox extends HTMLElement {
 		}else{
 			EventBroker.trigger('mrp-text-box_changed',triggerObj);
 		}
+	}
+	addList(list){
+		this.textBox.insertAdjacentElement('beforeEnd',list);
+		this.textBox.setAttribute('list',list.id);
 	}
 	addText(text){
 		this.shadowRoot.querySelector('input').value = text;

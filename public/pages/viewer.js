@@ -1,6 +1,6 @@
 const Viewer_template = document.createElement('template');
 Viewer_template.innerHTML = `
-	<div>
+	<div id="selectPlaylistDiv">
 		Select Playlist <mrp-drop-down id="Viewer_playListSelection"></mrp-drop-down>
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
@@ -21,17 +21,23 @@ Viewer_template.innerHTML = `
 class ViewerPage extends HTMLElement {
 	//TODO
 	
+	//have the startbutton look for the temp playListBox
+	//grey out start button until temp play list exists
 	
+	//once a song is played remove it from the list
+	//if playlist changes then update autp randomize it
 	
+	//add in main menu botton
+
+	//play around with screen sizes - did not work well on lap top
 	//add in pause between songs
-	
 	//add restart song button
 	//add in setting for start time of lyrics
 	//add in pause features
 	//pause should prob be taken from total time
 	//change the setting to have a speed setting instead of the songe lenght and starting point
-	
-	
+	//add a restart button
+
 	constructor() {
 		super();
 		
@@ -45,8 +51,15 @@ class ViewerPage extends HTMLElement {
 		this.addLyricsButton = this.shadowRoot.querySelector('#addLyrics');
 		this.addLyricsBox = this.shadowRoot.querySelector('#lyricsBox');
 		this.songTitleForAddLyrics = this.shadowRoot.querySelector('#songTitleForAddLyrics');
+		this.selectPlaylistDiv = this.shadowRoot.querySelector('#selectPlaylistDiv');
 		this.lyricsObj = this.shadowRoot.querySelector('mrp-marquee');
 		this.playListBox = this.shadowRoot.querySelector('mrp-drop-down');
+		
+		this.startButton = this.shadowRoot.querySelector('#startButton');
+		this.playlistButton = this.shadowRoot.querySelector('#playlistButton');
+		this.randomizeButton = this.shadowRoot.querySelector('#randomizeButton');
+		this.temp = this.shadowRoot.querySelector('#temp');
+		
 		this.setupSavedPlayLists();
 		
 		this.songSettings = SongSettings.createEmpty();
@@ -70,10 +83,41 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("updateLyrics", this, this.updateLyrics);
 		EventBroker.listen("PlaylistUpdate", this, this.updatePlaylist);
 		EventBroker.listen("songTitleChanged", this, this.setupSongList);
+		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
+		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 
-		this.setupSongList();
+		//this.setupSongList();
 		this.songIndex = 0;
 	}
+	setupViewerForTempPlaylist(){
+		//hide the drop playlist selection drop down
+		this.selectPlaylistDiv.hidden = true;
+		
+		//change the text on the next button to start
+		this.startButton.textContent = "Start - Playlist Needed";
+		this.startButton.disable();
+		
+		//hide the playlists button
+		this.playlistButton.hide();
+		
+		//hide the randomize button
+		this.randomizeButton.hide();		
+		
+		//hide the temp button
+		this.temp.hide();
+		
+		//hide the add lyrics options
+		this.addLyricsBox.hide();
+		this.addLyricsButton.hide();
+		
+	}
+	setupViewerForSavedPlaylist(){
+		debugger;
+		this.selectPlaylistDiv.hidden = false;
+		
+		
+	}
+	
 	videoPaused(){
 		this.lyricsObj.pause();
 	}
@@ -194,9 +238,6 @@ class ViewerPage extends HTMLElement {
 	loadVideo(){
 		this.videoPlayer.src = "http://localhost:8080/api/video?name=" + this.songList[this.songIndex];
 		this.videoPlayer.autoplay = true;
-		
-		
-		
 		this.setLyrics();
 	}
 	
@@ -260,10 +301,9 @@ class ViewerPage extends HTMLElement {
 		this.loadVideo();
 	}
 	updatePlaylist(playlistInfo){
-		debugger;
 		//if the current list is updated
 		if(this.playListBox.getValue() == playlistInfo.title){
-			
+			this.songList = playlistInfo.list;
 		}
 	}
 }

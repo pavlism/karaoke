@@ -86,7 +86,11 @@ MRPButton_template.innerHTML = `
                 background-color: #e5e6e7;
                 border-color: #e5e6e7;
             } 
-
+			button.huge { 
+                padding: 10px 16px;
+                font-size: 60px;
+                line-height: 1.3333333;
+            }
             button.large { 
                 padding: 10px 16px;
                 font-size: 18px;
@@ -158,6 +162,9 @@ class MRPButton extends HTMLElement {
 		}
 		if(this.getAttribute('large')===""){
 			classname = classname + " large";
+		}
+		if(this.getAttribute('huge')===""){
+			classname = classname + " huge";
 		}
 		
 		this['class'] = classname;

@@ -1,16 +1,18 @@
 const Playlist_template = document.createElement('template');
 Playlist_template.innerHTML = `
-	<div>
+	<div id='selectPlaylistDiv'>
 		Select Playlist <mrp-drop-down id="PlayList_playListSelection"></mrp-drop-down>
 	</div>
 	<div>
-	Name of playlist:<mrp-text-box></mrp-text-box>
-	Songs:<mrp-drop-down id='songList'></mrp-drop-down>
-	<mrp-button primary id="addSongButton">Add</mrp-button>
-	<mrp-button primary id="saveOnlyButton">Save</mrp-button>
-	<mrp-button primary id="saveButton">Save & Play</mrp-button>
-	<mrp-button primary id="deleteButton">Delete</mrp-button>
-	<mrp-button primary id="editButton">Edit</mrp-button>
+		<span id='playlistNameSpan'>Name of playlist:<mrp-text-box></mrp-text-box></span>
+		Songs:<mrp-drop-down width='250px' searchable id='songList'></mrp-drop-down>
+		Songs:<mrp-drop-down id='songList2'></mrp-drop-down>
+		<mrp-button primary id="addSongButton">Add</mrp-button>
+		<mrp-button primary id="saveOnlyButton">Save</mrp-button>
+		<mrp-button primary id="saveButton">Save & Play</mrp-button>
+		<mrp-button primary id="deleteButton">Delete</mrp-button>
+		<mrp-button primary id="editButton">Edit</mrp-button>
+		<mrp-button primary id="exitButton">Exit</mrp-button>
 	</div>
 	<mrp-list advanced id="playList">Play List</mrp-list>
 	<div id="editSongDiv">
@@ -28,23 +30,43 @@ Playlist_template.innerHTML = `
 class PlaylistPage extends HTMLElement {
 //todo	
 	
-	//if current list is playing when song title changes, then re-load it.
 	
-	//after a song is edited, close the dit window
-	//add are you sure to delete
-	//playlist names need to be unique
-	//add exit button
+	//test all the function of the new drop down
+	//take out tempsongListDD
+	
+	
+	//songs needs to be searchable text box as well as drop down
+	//make sure the savne button still works
+	
+	
+	//setup tempplaylist
+	
+			
+	
+	//stop adding of duplicates??
+	//add are you sure to delete a playlist
 	//don't save a playlist without a name
-
+	//if you edit a song then hide the playList
+	//can't change lyrics
+	//save and play button doesn't select the correct playlist - also playlist didn't seem to update properly
+	//make sure you can't add a playlist with no name
+	
 	constructor() {
 		super();
 		
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Playlist_template.content.cloneNode(true));
 		this.songListDD = this.shadowRoot.querySelector('#songList');
+		this.tempsongListDD = this.shadowRoot.querySelector('#songList2');
+		this.selectPlaylistDiv = this.shadowRoot.querySelector('#selectPlaylistDiv');
+		this.playlistNameSpan = this.shadowRoot.querySelector('#playlistNameSpan');
 
 		this.saveButton = this.shadowRoot.querySelector('#saveButton');
 		this.saveOnlyButton = this.shadowRoot.querySelector('#saveOnlyButton');
+		this.deleteButton = this.shadowRoot.querySelector('#deleteButton');
+		this.editButton = this.shadowRoot.querySelector('#editButton');
+		this.exitButton = this.shadowRoot.querySelector('#exitButton');
+		
 		this.playlistUL = this.shadowRoot.querySelector('mrp-list');
 		this.playlistTitleBox = this.shadowRoot.querySelector('mrp-text-box');
 		this.playlistDD = this.shadowRoot.querySelector('mrp-drop-down');
@@ -78,7 +100,36 @@ class PlaylistPage extends HTMLElement {
 		
 		this.setSongList();
 		this.playList = [];
+		this.playlistUL.hide();
+		
+		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
+		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 	}
+	
+	setupViewerForTempPlaylist(){	
+		//hide select playlist
+		this.selectPlaylistDiv.hidden = true;
+		
+		//hide name of playlist
+		this.playlistNameSpan.hidden = true;
+		
+		//show the playlist
+		this.playlistUL.show();
+		
+		//hide the buttons
+		this.saveButton.hide();
+		this.deleteButton.hide();
+		this.editButton.hide();
+		this.exitButton.hide();
+		
+		//set name to tempname
+	}
+	setupViewerForSavedPlaylist(){
+		debugger;
+		this.selectPlaylistDiv.hidden = false;
+	}
+	
+	
 	disableSaves(){
 		this.saveButton.disable();
 		this.saveOnlyButton.disable();
@@ -88,6 +139,7 @@ class PlaylistPage extends HTMLElement {
 		this.saveOnlyButton.enable();
 	}
 	editSong(){
+		this.hidePlaylist();
 		this.savedMessageDiv.hidden = true;
 		var apiCall = 'api/lyrics?name=' + this.songListDD.getValue();
 		
@@ -229,13 +281,14 @@ class PlaylistPage extends HTMLElement {
 	}
 	addSongsToDropDown(){
 		this.songListDD.addList(this.songList);
+		this.tempsongListDD.addList(this.songList);
 	}
 	addSongToList(){
 		this.playList.push(this.songListDD.getValue());
 		this.playlistUL.setList(this.playList);
 	}
 	saveButDontExit(){
-		this.addPlaylistToViewer(false)
+		this.addPlaylistToViewer(false);
 	}
 	addPlaylistToViewer(isExit = true){
 		EventBroker.trigger("usePlayList", this.playList);
@@ -335,6 +388,8 @@ class PlaylistPage extends HTMLElement {
 		}
 	}
 	setupPlayList(){
+		this.hideSongEditlist();
+		this.playlistUL.show();
 		
 		var playListName = this.playlistDD.getValue()
 
@@ -356,10 +411,16 @@ class PlaylistPage extends HTMLElement {
 				component.playList = JSON.parse(data);
 				component.playlistUL.setList(JSON.parse(data));
 				component.playlistTitleBox.setValue(playListName);
-				
 			}else{
 			}
 		}
+	}
+	hidePlaylist(){
+		this.playList.length = 0;
+		this.playlistUL.hide();
+	}
+	hideSongEditlist(){
+		this.editSondDiv.hidden = true;
 	}
 	_clearList(){
 		this.playlistTitleBox.setValue('');
