@@ -76,7 +76,7 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("videoEnded", this, this.nextVideo);
 		EventBroker.listen("Viewer_playListSelection_mrp-drop-down_changed", this, this.setupPlayList);
 		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
-		EventBroker.listen("temp_mrp-button_clicked", this, this.temp);
+		EventBroker.listen("temp_mrp-button_clicked", this, this.tempFunc);
 		EventBroker.listen("videoLoaded", this, this.startVideo);
 		EventBroker.listen("videoPaused", this, this.videoPaused);
 		EventBroker.listen("videoPlayed", this, this.videoPlayed);
@@ -88,6 +88,9 @@ class ViewerPage extends HTMLElement {
 
 		//this.setupSongList();
 		this.songIndex = 0;
+	}
+	tempFunc(){
+		debugger;
 	}
 	setupViewerForTempPlaylist(){
 		//hide the drop playlist selection drop down

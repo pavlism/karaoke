@@ -5,14 +5,14 @@ Playlist_template.innerHTML = `
 	</div>
 	<div>
 		<span id='playlistNameSpan'>Name of playlist:<mrp-text-box></mrp-text-box></span>
-		Songs:<mrp-drop-down width='250px' searchable id='songList'></mrp-drop-down>
-		Songs:<mrp-drop-down id='songList2'></mrp-drop-down>
+		Songs:<mrp-drop-down value="AC DC - Back In Black" width='250px' searchable id='songList'></mrp-drop-down>
 		<mrp-button primary id="addSongButton">Add</mrp-button>
 		<mrp-button primary id="saveOnlyButton">Save</mrp-button>
 		<mrp-button primary id="saveButton">Save & Play</mrp-button>
 		<mrp-button primary id="deleteButton">Delete</mrp-button>
 		<mrp-button primary id="editButton">Edit</mrp-button>
 		<mrp-button primary id="exitButton">Exit</mrp-button>
+		<mrp-button primary id="temp2">temp</mrp-button>
 	</div>
 	<mrp-list advanced id="playList">Play List</mrp-list>
 	<div id="editSongDiv">
@@ -31,9 +31,7 @@ class PlaylistPage extends HTMLElement {
 //todo	
 	
 	
-	//test all the function of the new drop down
-	//take out tempsongListDD
-	
+	//add in an error when a song title is added but that song doest exists - debugger already in place
 	
 	//songs needs to be searchable text box as well as drop down
 	//make sure the savne button still works
@@ -57,7 +55,6 @@ class PlaylistPage extends HTMLElement {
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Playlist_template.content.cloneNode(true));
 		this.songListDD = this.shadowRoot.querySelector('#songList');
-		this.tempsongListDD = this.shadowRoot.querySelector('#songList2');
 		this.selectPlaylistDiv = this.shadowRoot.querySelector('#selectPlaylistDiv');
 		this.playlistNameSpan = this.shadowRoot.querySelector('#playlistNameSpan');
 
@@ -78,6 +75,10 @@ class PlaylistPage extends HTMLElement {
 		this.startingPoint = this.shadowRoot.querySelector('#startingPoint');
 		this.volume = this.shadowRoot.querySelector('#volume');
 		this.songLyrics = this.shadowRoot.querySelector('#songLyrics');
+		
+		
+		EventBroker.listen("temp2_mrp-button_clicked", this, this.tempFunc);
+		
 		
 		this.setupSavedPlayLists();
 		
@@ -104,6 +105,10 @@ class PlaylistPage extends HTMLElement {
 		
 		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
+	}
+	
+	
+	tempFunc(){
 	}
 	
 	setupViewerForTempPlaylist(){	
@@ -281,9 +286,14 @@ class PlaylistPage extends HTMLElement {
 	}
 	addSongsToDropDown(){
 		this.songListDD.addList(this.songList);
-		this.tempsongListDD.addList(this.songList);
 	}
 	addSongToList(){
+		//need to test if the song exists
+		if(!this.songList.includes(this.songListDD.getValue())){
+			debugger;
+			return false;
+		}
+		
 		this.playList.push(this.songListDD.getValue());
 		this.playlistUL.setList(this.playList);
 	}

@@ -84,7 +84,6 @@ class MRPTextBox extends HTMLElement {
 		this.value = '';
 	}
 	static get observedAttributes() {
-		debugger;
 		return ['width'];
     }
 
@@ -136,6 +135,9 @@ class MRPTextBox extends HTMLElement {
 	addList(list){
 		this.textBox.insertAdjacentElement('beforeEnd',list);
 		this.textBox.setAttribute('list',list.id);
+	}
+	removeList(){
+		this.textBox.firstElementChild.remove();
 	}
 	addText(text){
 		this.shadowRoot.querySelector('input').value = text;

@@ -29,14 +29,7 @@ MRPDropDown_template.innerHTML = `
 	<select></select><mrp-text-box width='100px'></mrp-text-box><datalist></datalist><slot></slot>
 `
 
-
-//change index to mrp box
-//setup length for both options
-//add in the adlity to set a defualt value
-
 //test all the function of both options
-
-
 
 class MRPDropDown extends HTMLElement {
 	constructor() {
@@ -53,22 +46,30 @@ class MRPDropDown extends HTMLElement {
 		this.datalist = this.shadowRoot.querySelector('datalist');
 		this.searchable = false;
 		
+		//if a value is set then use that as the defualt value
 		if(this.getAttribute('value')==null){
 			this.value = "";
 		}else{
 			this.value = this.getAttribute('value');
 		}
 		
+		//if ID is set then pass then to the textbox as well
+		if(this.getAttribute('id')!==null){
+			this.input.id = this.getAttribute('id')+"_text-box";
+		}
+		
+		//if a width is set then pass that to the textbox
 		if(this.getAttribute('width') !== null){
 			this.input.setAttribute('width',this.getAttribute('width'));
 		}
 		
+		//if searchable is enabled then keep the text box, else remove it
 		if(this.getAttribute('searchable')===""){
 			this.dropDown.remove();
 			this.searchable = true;
 			this.datalist.id = this.getAttribute('id') + '_datalist_MRPDropDown';
-			debugger;
 			this.input.addList(this.datalist);
+			this.input.setValue(this.value);
 		}else{
 			this.datalist.remove();
 			this.input.remove();
@@ -90,10 +91,33 @@ class MRPDropDown extends HTMLElement {
 		this.list = list;
 		this._fillDropDown();
 	}
+	_replaceList() {
+		if(this.searchable){
+			//clear the input box
+			this.input.removeList();
+			
+			//clear teh data list
+			while (this.datalist.firstChild) {
+				this.datalist.removeChild(this.datalist.firstChild);
+			}
+			//refile the data list
+			this._fillDropDown();
+			
+			//send the data list back to the input box
+			this.input.addList(this.datalist);
+		}else{
+			//clear the list
+			while (this.dropDown.firstChild) {
+				this.dropDown.removeChild(this.dropDown.firstChild);
+			}
+			//re-fill the list
+			this._fillDropDown();
+		}
+	}
 	_fillDropDown(){
 		var htmlToR = [];
 		
-		if(this.value === ""){
+		if(this.value === "" && !this.searchable){
 			this.value = this.list[0];
 		}
 		
@@ -109,7 +133,9 @@ class MRPDropDown extends HTMLElement {
 			
 			//create the new option
 			var newOption = document.createElement("option");
-			newOption.value = value.replaceAll("'","&#39;");
+			//not sure why this is here, but maybe it was needed??
+			//newOption.value = value.replaceAll("'","&#39;");
+			newOption.value = value;
 			newOption.setAttribute('id',optionCounter);			
 			
 			//if a defualt value is selected
@@ -149,11 +175,9 @@ class MRPDropDown extends HTMLElement {
 		}
 	}
 	getValue(){	
-		debugger;
-		return this.value.replaceAll("&#39;","'");
+		return this.value;
 	}
 	setValue(newValue){
-		debugger;
 		if(this.value === newValue){
 			return false;
 		}
@@ -161,13 +185,20 @@ class MRPDropDown extends HTMLElement {
 		for (var optionCounter = 0; optionCounter < this.list.length; optionCounter++) {
 			var value = this.list[optionCounter];
 			if(value === newValue){
-				this.shadowRoot.querySelector("select").children[optionCounter].selected = true;
+				if(this.searchable){
+					this.input.setValue(newValue);
+				}else{
+					this.shadowRoot.querySelector("select").children[optionCounter].selected = true;
+				}
+				this.value = newValue;
 			}
 		}
 	}
 	updateCurrentSelection(newValue){
 		this.list[this.selectionIndex] = newValue;
-		this._fillDropDown();
+		//clear the fill down first, then re-laod it
+		this._replaceList();
+		this.setValue(newValue);		
 	}
 	sortAlphabetically(isAsc = true){
 		if(isAsc){
@@ -175,6 +206,7 @@ class MRPDropDown extends HTMLElement {
 		}else{
 			this.list.reverse();
 		}
+		this._replaceList();
 	}
 	hide(){
 		this.dropDown.classList.add('hidden');
