@@ -1,5 +1,6 @@
 const Playlist_template = document.createElement('template');
 Playlist_template.innerHTML = `
+	<mrp-alert></mrp-alert>
 	<div id='selectPlaylistDiv'>
 		Select Playlist <mrp-drop-down id="PlayList_playListSelection"></mrp-drop-down>
 	</div>
@@ -31,16 +32,15 @@ class PlaylistPage extends HTMLElement {
 //todo	
 	
 	
-	//add in an error when a song title is added but that song doest exists - debugger already in place
-	
-	//songs needs to be searchable text box as well as drop down
-	//make sure the savne button still works
-	
-	
 	//setup tempplaylist
+	//if user added playlist matchd this.tempPlayListTitle - add in error
 	
-			
 	
+	
+	//change the drop down to erase the current contents when the arrow is clicked
+		
+	//hide playlists.tempPlayListTitle from the playlists - do this in the server
+	//add a button to delete the old temp playlist
 	//stop adding of duplicates??
 	//add are you sure to delete a playlist
 	//don't save a playlist without a name
@@ -48,6 +48,7 @@ class PlaylistPage extends HTMLElement {
 	//can't change lyrics
 	//save and play button doesn't select the correct playlist - also playlist didn't seem to update properly
 	//make sure you can't add a playlist with no name
+	//save button started the playlist - it should do that anymore
 	
 	constructor() {
 		super();
@@ -63,6 +64,8 @@ class PlaylistPage extends HTMLElement {
 		this.deleteButton = this.shadowRoot.querySelector('#deleteButton');
 		this.editButton = this.shadowRoot.querySelector('#editButton');
 		this.exitButton = this.shadowRoot.querySelector('#exitButton');
+		
+		this.errorBox = this.shadowRoot.querySelector('mrp-alert');
 		
 		this.playlistUL = this.shadowRoot.querySelector('mrp-list');
 		this.playlistTitleBox = this.shadowRoot.querySelector('mrp-text-box');
@@ -102,6 +105,11 @@ class PlaylistPage extends HTMLElement {
 		this.setSongList();
 		this.playList = [];
 		this.playlistUL.hide();
+		this.tempView = true;
+		this.tempPlayListTitle = "1234_mrp_!!!!!";
+		
+		DataBroker.listen('tempPlayListTitle',this,'tempPlayListTitle');
+		//DataBroker.listen('tempPlayListTitle',this,function(thisComp){return thisComp.tempPlayListTitle});
 		
 		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
@@ -127,11 +135,16 @@ class PlaylistPage extends HTMLElement {
 		this.editButton.hide();
 		this.exitButton.hide();
 		
-		//set name to tempname
+		//set viewbool
+		this.tempView = true;
+		
+		
+		
 	}
 	setupViewerForSavedPlaylist(){
 		debugger;
 		this.selectPlaylistDiv.hidden = false;
+		this.tempView = false;
 	}
 	
 	
@@ -290,7 +303,8 @@ class PlaylistPage extends HTMLElement {
 	addSongToList(){
 		//need to test if the song exists
 		if(!this.songList.includes(this.songListDD.getValue())){
-			debugger;
+			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
+			this.errorBox.show();
 			return false;
 		}
 		
@@ -301,9 +315,13 @@ class PlaylistPage extends HTMLElement {
 		this.addPlaylistToViewer(false);
 	}
 	addPlaylistToViewer(isExit = true){
-		EventBroker.trigger("usePlayList", this.playList);
-		
+		debugger;		
 		var playListTitle = this.playlistTitleBox.getValue();
+		
+		if(playListTitle ==='' && this.tempView){
+			playListTitle = this.tempPlayListTitle;
+		}
+		
 		var listInfo = {title:playListTitle,list:JSON.stringify(this.playList)};
 		
 		addPlayList(this, listInfo);

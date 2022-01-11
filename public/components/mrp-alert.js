@@ -55,6 +55,8 @@ make it so the alert can be used as a click box
 Make it so a timmer can work with it
 make it so the text on the screen can be changed
 add events to listen for to close and show teh alert box
+setup different styles of boxes, so instead of using setError() or setYesNo(), the style can be passed in like with the buttons
+setup the ability to pass in the header and message as an attribute
 */
 
 	constructor() {
@@ -66,6 +68,7 @@ add events to listen for to close and show teh alert box
 		this.closeButton = this.shadowRoot.querySelector('#close');
 		this.yesButton = this.shadowRoot.querySelector('#yes');
 		this.noButton = this.shadowRoot.querySelector('#no');
+		this.titleElement = this.shadowRoot.querySelector('.titleElement');
 		
 		//setup default type - close only
 		this.yesButton.hide();
@@ -73,6 +76,12 @@ add events to listen for to close and show teh alert box
 		
 		Lib.Comp.setupDefualtProperties(this, 'div');
 		
+	}
+	setError(title, message){
+		this.changeHeader("Error");
+		this.changeMessage('Song title does not exist, please choose from the list');
+		this.titleElement.style.backgroundColor = '#ef6776';
+		debugger;
 	}
 	setYesNo(){
 		this.closeButton.hide();

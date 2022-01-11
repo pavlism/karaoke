@@ -20,7 +20,6 @@ class IndexPage extends HTMLElement {
 		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.showPlaylistScreen);
 		EventBroker.listen("adminButton_mrp-button_clicked", this, this.showPlaylistScreen);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.showViewerScreen);
-
 	}
 
 	showPlaylistScreen(){

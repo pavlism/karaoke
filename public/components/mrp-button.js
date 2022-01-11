@@ -170,6 +170,12 @@ class MRPButton extends HTMLElement {
 		this['class'] = classname;
 		this.shadowRoot.querySelector('button').className = classname;
 		
+		this.events = {};
+		this.events.clicked = 'clicked';
+		this.events.shown = 'shown';
+		this.events.hidden = 'hidden';
+		this.events.disabled = 'disabled';
+		this.events.enabled = 'enabled';
 	}
 	_handleClick(event){
 		if(this.button.disabled){
@@ -180,6 +186,7 @@ class MRPButton extends HTMLElement {
 		var triggerObj = {element:this, event:event};
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-button_clicked',triggerObj);
+			EventBroker.trigger(this,this.events.clicked);
 		}else if(this['classname'] !== ""){
 			EventBroker.trigger(this['classname'] + '_mrp-button_clicked',triggerObj);
 		}else{
@@ -188,17 +195,21 @@ class MRPButton extends HTMLElement {
 	}
 	hide(){
 		this.button.classList.add('hidden');
+		EventBroker.trigger(this,this.events.hidden);
 	}
 	show(){
 		this.button.classList.remove('hidden');
+		EventBroker.trigger(this,this.events.shown);
 	}
 	disable(){
 		this.button.disabled = true;
 		this.button.classList.add('disabled');
+		EventBroker.trigger(this,this.events.disabled);
 	}
 	enable(){
 		this.button.disabled = false;
 		this.button.classList.remove('disabled');
+		EventBroker.trigger(this,this.events.enabled);
 	}
 }
 

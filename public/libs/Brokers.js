@@ -7,18 +7,42 @@ if (Lib.JS.isUndefined(Broker)) {
 
     var creation = function () {
 
-        this.connections = [];
+        this.strConnections = [];
+        this.objConnections = [];
 
-        var log = new Logger('Broker.js', CLL.debug);
+        var log = new Logger('Broker.js', CLL.warn);
 
-        this.addListener = function (connection, listenerArgs, callback) {
-            if (Lib.JS.isUndefined(EventBroker.connections[connection])) {
-                EventBroker.connections[connection] = [];
+        this.addListener = function () {
+            if(arguments.length ===3){
+				this._addListenerString(arguments[0],arguments[1],arguments[2]);
+			}else if(arguments.length ===4){
+				this._addListenerObj(arguments[0],arguments[1],arguments[2],arguments[3]);
+			}
+        };
+		
+		this._addListenerObj = function (ID, event, listenerArgs, callback) {
+			
+            if (Lib.JS.isUndefined(EventBroker.objConnections[ID])) {
+                EventBroker.objConnections[ID] = {};
             }
-            var eventObj = {connection: connection, listenerArgs: listenerArgs, callback: callback};
-            EventBroker.connections[connection].push(eventObj);
+			
+			if (Lib.JS.isUndefined(EventBroker.objConnections[ID][event])) {
+                EventBroker.objConnections[ID][event] = [];
+            }
+			
+            var eventObj = {listenerArgs: listenerArgs, callback: callback};
+            EventBroker.objConnections[ID][event].push(eventObj);
             return eventObj;
         };
+		this._addListenerString = function (connection, listenerArgs, callback) {
+            if (Lib.JS.isUndefined(EventBroker.strConnections[connection])) {
+                EventBroker.strConnections[connection] = [];
+            }
+            var eventObj = {connection: connection, listenerArgs: listenerArgs, callback: callback};
+            EventBroker.strConnections[connection].push(eventObj);
+            return eventObj;
+        };
+		
         //Used to remove a listeneter, used if you only want to listen to an event once
         this.remove = function (listener) {
             Lib.JS.remove(EventBroker.connection[listener.connection], listener);
@@ -34,9 +58,55 @@ if (Lib.JS.isUndefined(EventBroker)) {
     var EventBroker = Object.create(Broker);
 
     var creation = function () {
+	
+        var log = new Logger('EventBroker.js', CLL.warn);
+		
+		this.listenAll = 'EventBroker_all';
+		this.listen = function () {
+			if(arguments.length ===3){
+				this._listenString(arguments[0],arguments[1],arguments[2]);
+			}else if(arguments.length ===4){
+				this._listenObj(arguments[0],arguments[1],arguments[2],arguments[3]);
+			}
+		}
+				
+		this._listenObj = function (obj, events, listenerArgs, callback) {
+			if (Lib.JS.isUndefined(obj) || (Lib.JS.isUndefined(obj.id) && Lib.JS.isUndefined(obj.ID))) {
+                log.error("The first paramater must be defined and have and unique id");
+				return false;
+            }
+			
+			var objID = obj.id || obj.ID;
+			 
+            if (!Lib.JS.isString(events) && !Lib.JS.isArray(events)) {
+                log.error("The 2nd paramater (events) must be a string or array of strings that represents the event to listen too");
+				return false;
+            }
 
-        var log = new Logger('EventBroker.js', CLL.debug);
-        this.listen = function (events, listenerArgs, callback) {
+            if (Lib.JS.isUndefined(listenerArgs)) {
+                log.error("The 3rd paramater must be an object (listenerArgs) or the call back function")
+				return false;
+            }
+
+            if (Lib.JS.isUndefined(callback) || !Lib.JS.isFunction(callback)) {
+                log.error("The 4th paramater must be an function");
+				return false;
+            }
+
+            if (Lib.JS.isFunction(listenerArgs)) {
+                callback = listenerArgs;
+                listenerArgs = {};
+            }
+			
+            if (Lib.JS.isArray(events)) {
+                for (var eventCounter = 0; eventCounter < events.length; eventCounter++) {
+                    this.addListener(objID, events[eventCounter], listenerArgs, callback);
+                }
+            } else {
+                return this.addListener(objID, events, listenerArgs, callback);
+            }
+        };
+        this._listenString = function (events, listenerArgs, callback) {
             if (!Lib.JS.isString(events) && !Lib.JS.isArray(events)) {
                 log.error("The first paramater (events) must be a string or array of strings that represents the event to listen too");
             }
@@ -64,19 +134,53 @@ if (Lib.JS.isUndefined(EventBroker)) {
                 return this.addListener(events, listenerArgs, callback);
             }
         };
-
-        this.trigger = function (event, triggerArgs) {
+        
+		this.trigger = function () {
+            if(Lib.JS.isString(arguments[0])){
+				this._triggerSting(arguments[0],arguments[1]);
+			}else{
+				this._triggerObj(arguments[0],arguments[1]);
+			}
+        };
+		this._triggerObj = function (obj,event) {
+			if (Lib.JS.isUndefined(obj) || (Lib.JS.isUndefined(obj.id) && Lib.JS.isUndefined(obj.ID))) {
+                log.error("The first paramater must be defined and have and unique id");
+				return false;
+            }
+			
+			var objID = obj.id || obj.ID;
+			
+			if (Lib.JS.isUndefined(EventBroker.objConnections[objID])) {
+                log.debug('the event ' + obj.ID + ':' + event + ' does not have any listeners');
+                return false;
+            }
+			
+			if (Lib.JS.isDefined(EventBroker.objConnections[objID][event]) && EventBroker.objConnections[objID][event].length) {
+				for (var listenerCounter = 0; listenerCounter < EventBroker.objConnections[objID][event].length; listenerCounter++) {
+					var listener = EventBroker.objConnections[objID][event][listenerCounter];
+					listener.callback.call(listener.listenerArgs, {target:obj,event});
+				}
+            }
+			
+			if (Lib.JS.isDefined(EventBroker.objConnections[objID][this.listenAll]) && EventBroker.objConnections[objID][this.listenAll].length) {
+				for (var listenerCounter = 0; listenerCounter < EventBroker.objConnections[objID][this.listenAll].length; listenerCounter++) {
+					var listener = EventBroker.objConnections[objID][this.listenAll][listenerCounter];
+					listener.callback.call(listener.listenerArgs, {target:obj,event});
+				}
+            }
+        };
+		this._triggerSting = function (event, triggerArgs) {
             triggerArgs = Lib.JS.setDefaultParameter(triggerArgs, {});
 
-            if (Lib.JS.isUndefined(EventBroker.connections[event]) || EventBroker.connections[event].length === 0) {
+            if (Lib.JS.isUndefined(EventBroker.strConnections[event]) || EventBroker.strConnections[event].length === 0) {
                 log.debug('the event ' + event + ' does not have any listeners');
                 return false;
             }
 
             var listenerCounter = 0;
 
-            for (listenerCounter = 0; listenerCounter < EventBroker.connections[event].length; listenerCounter++) {
-                var listener = EventBroker.connections[event][listenerCounter];
+            for (listenerCounter = 0; listenerCounter < EventBroker.strConnections[event].length; listenerCounter++) {
+                var listener = EventBroker.strConnections[event][listenerCounter];
                 listener.callback.call(listener.listenerArgs, triggerArgs);
             }
         };
@@ -92,7 +196,7 @@ if (Lib.JS.isUndefined(DataBroker)) {
 
     var creation = function () {
 
-        var log = new Logger('DataBroker.js', CLL.debug);
+        var log = new Logger('DataBroker.js', CLL.warn);
 		
         this.listen = function (dataCall, listenerArgs, callback) {
 
@@ -104,8 +208,8 @@ if (Lib.JS.isUndefined(DataBroker)) {
                 log.error("The second paramater must be an object (listenerArgs) or the call back function")
             }
 
-            if (!Lib.JS.isUndefined(callback) && !Lib.JS.isFunction(callback)) {
-                log.error("The third paramater must be an function");
+            if (Lib.JS.isUndefined(callback) || (!Lib.JS.isFunction(callback) && !Lib.JS.isString(callback))) {
+                log.error("The third paramater must be an function or a string");
             }
 
             if (Lib.JS.isFunction(listenerArgs)) {
@@ -120,15 +224,20 @@ if (Lib.JS.isUndefined(DataBroker)) {
             }
         };
         this.trigger = function (dataCall, triggerArgs) {
-
             triggerArgs = Lib.JS.setDefaultParameter(triggerArgs, {});
 
-            if (Lib.JS.isUndefined(DataBroker.connections[dataCall]) || DataBroker.connections[dataCall].length === 0) {
+            if (Lib.JS.isUndefined(DataBroker.strConnections[dataCall]) || DataBroker.strConnections[dataCall].length === 0) {
                 log.debug('the dataCall ' + dataCall + ' does not have any listeners');
                 return false;
             }
 
-            var listener = DataBroker.connections[dataCall][0];
+            var listener = DataBroker.strConnections[dataCall][0];
+			
+			//if the dataCall is a string an not a function then simply try pass the data on the listenerArgs object
+			if(Lib.JS.isString(dataCall) && Lib.JS.isDefined(listener.listenerArgs[dataCall])){
+				return listener.listenerArgs[dataCall];
+			}
+			
             return listener.callback(listener.listenerArgs, triggerArgs);
         };
     };

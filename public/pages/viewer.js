@@ -21,12 +21,19 @@ Viewer_template.innerHTML = `
 class ViewerPage extends HTMLElement {
 	//TODO
 	
+	
+	//ENOENT: no such file or directory, stat 'public/videos/Tiësto .mp4' - somthing wierd happened and it crashed to server
+	
+	
+	
 	//have the startbutton look for the temp playListBox
 	//grey out start button until temp play list exists
 	
 	//once a song is played remove it from the list
 	//if playlist changes then update autp randomize it
 	
+	
+	//make sure video is fully loaded before playing (validate on laptop)
 	//add in main menu botton
 
 	//play around with screen sizes - did not work well on lap top
@@ -37,11 +44,11 @@ class ViewerPage extends HTMLElement {
 	//pause should prob be taken from total time
 	//change the setting to have a speed setting instead of the songe lenght and starting point
 	//add a restart button
+	
 
 	constructor() {
 		super();
-		
-		//<source src="http://localhost:8080/api/video" type="video/mp4">
+
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Viewer_template.content.cloneNode(true));
 
@@ -74,7 +81,7 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("usePlayList", this, this.setSongList);
 		EventBroker.listen("newPlaylistAdded", this, this.setupSavedPlayLists);
 		EventBroker.listen("videoEnded", this, this.nextVideo);
-		EventBroker.listen("Viewer_playListSelection_mrp-drop-down_changed", this, this.setupPlayList);
+		EventBroker.listen(["Viewer_playListSelection_mrp-drop-down_changed"], this, this.setupPlayList);
 		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
 		EventBroker.listen("temp_mrp-button_clicked", this, this.tempFunc);
 		EventBroker.listen("videoLoaded", this, this.startVideo);
@@ -91,6 +98,10 @@ class ViewerPage extends HTMLElement {
 	}
 	tempFunc(){
 		debugger;
+	}
+	_pingTempPlaylist(a,b,c){
+		debugger;
+		this.setupPlayList(this.tempPlayListTitle);
 	}
 	setupViewerForTempPlaylist(){
 		//hide the drop playlist selection drop down
@@ -113,6 +124,9 @@ class ViewerPage extends HTMLElement {
 		this.addLyricsBox.hide();
 		this.addLyricsButton.hide();
 		
+		//get the temp playlist name
+		this.tempPlayListTitle = DataBroker.trigger('tempPlayListTitle');		
+		this.pingInterval = Lib.JS.setInterval(this,this._pingTempPlaylist, 3000);
 	}
 	setupViewerForSavedPlaylist(){
 		debugger;
@@ -268,9 +282,11 @@ class ViewerPage extends HTMLElement {
 			}
 		}
 	}
-	setupPlayList(){
+	setupPlayList(playListName){
 		
-		var playListName = this.playListBox.getValue()
+		if(Lib.JS.isUndefined(playListName)){
+			playListName = this.playListBox.getValue();
+		}
 
 		if(playListName==="All"){
 			this.setSongList(this.fullSongList);
