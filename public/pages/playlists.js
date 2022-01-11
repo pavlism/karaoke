@@ -34,7 +34,7 @@ Playlist_template.innerHTML = `
 `
 class PlaylistPage extends HTMLElement {
 //todo	
-								
+						
 	//when added lyrics the song started to play
 	//move the lyrics box in the edit song to be below the rest of the info and make it bigger
 	
