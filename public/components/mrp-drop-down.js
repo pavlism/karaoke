@@ -36,6 +36,7 @@ class MRPDropDown extends HTMLElement {
 		super();
 		
 		this.addEventListener('input',this._handleChange);
+		this.addEventListener('click',this._handleClick);
 			
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPDropDown_template.content.cloneNode(true));
@@ -85,8 +86,42 @@ class MRPDropDown extends HTMLElement {
 			this.list = JSON.parse(this.getAttribute('list'));
 			this._fillDropDown();
 		}
+		
+		this.events = {};
+		this.events.clicked = 'clicked';
+		this.events.changed = 'changed';
+		this.events.shown = 'shown';
+		this.events.hidden = 'hidden';
+		this.events.disabled = 'disabled';
+		this.events.enabled = 'enabled';
 
-	}	
+	}
+	_handleClick(event){
+		if(this.dropDown.disabled){
+			event.preventDefault();
+			return false;
+		}
+		
+		
+		//if you click on the arrow then blank the text box
+		var relativeLeftPos = event.offsetX - event.path[0].offsetLeft;
+		var width = this.offsetWidth;
+		
+		if(width - relativeLeftPos < 65 && width - relativeLeftPos > 35){
+			this.value = '';
+			this.input.setValue('')
+		}
+		
+		var triggerObj = {element:this, event:event};
+		if(this.id !== ""){
+			EventBroker.trigger(this.id + '_mrp-drop-down_clicked',triggerObj);
+			EventBroker.trigger(this,this.events.clicked);
+		}else if(this['classname'] !== ""){
+			EventBroker.trigger(this['classname'] + '_mrp-drop-down_clicked',triggerObj);
+		}else{
+			EventBroker.trigger('mrp-drop-down_clicked',triggerObj);
+		}
+	}
 	addList(list){
 		this.list = list;
 		this._fillDropDown();
@@ -164,10 +199,16 @@ class MRPDropDown extends HTMLElement {
 		
 		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
 		this.value = event.path[0].value;
-		this.selectionIndex = this.dropDown.selectedIndex;
+		
+		if(this.searchable){
+			this.selectionIndex = -1;
+		}else{
+			this.selectionIndex = this.dropDown.selectedIndex;
+		}
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-drop-down_changed',triggerObj);
+			EventBroker.trigger(this,this.events.changed);
 		}else if(this['class'] !== ""){
 			EventBroker.trigger(this['class'] + '_mrp-drop-down_changed',triggerObj);
 		}else{
@@ -176,6 +217,19 @@ class MRPDropDown extends HTMLElement {
 	}
 	getValue(){	
 		return this.value;
+	}
+	getIndex(){	
+		if(this.selectionIndex !==-1){
+			return this.selectionIndex;
+		}
+		
+		
+		for(var itemCounter = 0;itemCounter<this.list.length;itemCounter++){
+			if(this.list[itemCounter] = this.value){
+				return itemCounter;
+			}
+		}
+		return -1;
 	}
 	setValue(newValue){
 		if(this.value === newValue){
@@ -210,17 +264,21 @@ class MRPDropDown extends HTMLElement {
 	}
 	hide(){
 		this.dropDown.classList.add('hidden');
+		EventBroker.trigger(this,this.events.hidden);
 	}
 	show(){
 		this.dropDown.classList.remove('hidden');
+		EventBroker.trigger(this,this.events.shown);
 	}
 	disable(){
 		this.dropDown.disabled = true;
 		this.dropDown.style.backgroundColor = '#e5e6e7'
+		EventBroker.trigger(this,this.events.disabled);
 	}
 	enable(){
 		this.dropDown.disabled = false;
-		this.dropDown.style.backgroundColor = '#ffffff'
+		this.dropDown.style.backgroundColor = '#ffffff';
+		EventBroker.trigger(this,this.events.enabled);
 	}
 }
 window.customElements.define('mrp-drop-down', MRPDropDown);

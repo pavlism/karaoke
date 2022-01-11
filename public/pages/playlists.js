@@ -1,18 +1,21 @@
 const Playlist_template = document.createElement('template');
 Playlist_template.innerHTML = `
-	<mrp-alert></mrp-alert>
+	<mrp-alert id='errorAlert'></mrp-alert>
+	<mrp-alert id='areYouSureAlert'></mrp-alert>
 	<div id='selectPlaylistDiv'>
 		Select Playlist <mrp-drop-down id="PlayList_playListSelection"></mrp-drop-down>
 	</div>
 	<div>
 		<span id='playlistNameSpan'>Name of playlist:<mrp-text-box></mrp-text-box></span>
-		Songs:<mrp-drop-down value="AC DC - Back In Black" width='250px' searchable id='songList'></mrp-drop-down>
+		Songs:<mrp-drop-down width='500px' searchable id='songList'></mrp-drop-down>
 		<mrp-button primary id="addSongButton">Add</mrp-button>
 		<mrp-button primary id="saveOnlyButton">Save</mrp-button>
 		<mrp-button primary id="saveButton">Save & Play</mrp-button>
-		<mrp-button primary id="deleteButton">Delete</mrp-button>
-		<mrp-button primary id="editButton">Edit</mrp-button>
+		<mrp-button primary id="deleteButton">Delete Playlist</mrp-button>
+		<mrp-button primary id="editButton">Edit Song</mrp-button>
+		<mrp-button primary id="editLyricsButton">Edit Next Song Without Lyrics</mrp-button>
 		<mrp-button primary id="exitButton">Exit</mrp-button>
+		<mrp-button primary id="clearButton">Clear List</mrp-button>
 		<mrp-button primary id="temp2">temp</mrp-button>
 	</div>
 	<mrp-list advanced id="playList">Play List</mrp-list>
@@ -23,6 +26,7 @@ Playlist_template.innerHTML = `
 		Volume:<mrp-text-box id='volume'  number></mrp-text-box>
 		Lyrics:<mrp-text-area id='songLyrics'></mrp-text-area>
 		<mrp-button primary id="saveSongButton" number>Save</mrp-button>
+		<mrp-button primary id="saveSongCancelButton" number>Cancel</mrp-button>
 	</dv>
 	<div id="savedDiv">
 		Save Complete
@@ -30,25 +34,15 @@ Playlist_template.innerHTML = `
 `
 class PlaylistPage extends HTMLElement {
 //todo	
+								
+	//when added lyrics the song started to play
+	//move the lyrics box in the edit song to be below the rest of the info and make it bigger
 	
+	//song edit need to be simpler - just like a speed settings
+	//add ability to puase the song for a specific duration in the lyrics
+	//add ability to test a song and add pauses as you are testing
 	
-	//setup tempplaylist
-	//if user added playlist matchd this.tempPlayListTitle - add in error
-	
-	
-	
-	//change the drop down to erase the current contents when the arrow is clicked
-		
-	//hide playlists.tempPlayListTitle from the playlists - do this in the server
-	//add a button to delete the old temp playlist
-	//stop adding of duplicates??
-	//add are you sure to delete a playlist
-	//don't save a playlist without a name
-	//if you edit a song then hide the playList
-	//can't change lyrics
-	//save and play button doesn't select the correct playlist - also playlist didn't seem to update properly
-	//make sure you can't add a playlist with no name
-	//save button started the playlist - it should do that anymore
+	//hide temp button
 	
 	constructor() {
 		super();
@@ -60,12 +54,12 @@ class PlaylistPage extends HTMLElement {
 		this.playlistNameSpan = this.shadowRoot.querySelector('#playlistNameSpan');
 
 		this.saveButton = this.shadowRoot.querySelector('#saveButton');
+		this.saveButton.hide();
 		this.saveOnlyButton = this.shadowRoot.querySelector('#saveOnlyButton');
 		this.deleteButton = this.shadowRoot.querySelector('#deleteButton');
 		this.editButton = this.shadowRoot.querySelector('#editButton');
+		this.editLyricsButton = this.shadowRoot.querySelector('#editLyricsButton');
 		this.exitButton = this.shadowRoot.querySelector('#exitButton');
-		
-		this.errorBox = this.shadowRoot.querySelector('mrp-alert');
 		
 		this.playlistUL = this.shadowRoot.querySelector('mrp-list');
 		this.playlistTitleBox = this.shadowRoot.querySelector('mrp-text-box');
@@ -78,12 +72,19 @@ class PlaylistPage extends HTMLElement {
 		this.startingPoint = this.shadowRoot.querySelector('#startingPoint');
 		this.volume = this.shadowRoot.querySelector('#volume');
 		this.songLyrics = this.shadowRoot.querySelector('#songLyrics');
+		this.clearButton = this.shadowRoot.querySelector('#clearButton');
 		
+		this.errorBox = this.shadowRoot.querySelector('#errorAlert');
+		this.areYouSureBox = this.shadowRoot.querySelector('#areYouSureAlert');
+		this.areYouSureBox.setYesNo("Warning", "Are you sure you want to delete the playlist?");
 		
+		EventBroker.listen(this.areYouSureBox, this.areYouSureBox.events.yes, this, this.removePlayList);
 		EventBroker.listen("temp2_mrp-button_clicked", this, this.tempFunc);
-		
+		EventBroker.listen(this.clearButton,this.clearButton.events.clicked, this, this._clearCurrentList);
 		
 		this.setupSavedPlayLists();
+		this.songIndex = -1;
+		this.songSettings = {};
 		
 		this.editSondDiv.hidden = true;
 		this.savedMessageDiv.hidden = true;
@@ -97,28 +98,39 @@ class PlaylistPage extends HTMLElement {
 		EventBroker.listen("saveButton_mrp-button_clicked", this, this.saveButDontExit);
 		EventBroker.listen("saveOnlyButton_mrp-button_clicked", this, this.addPlaylistToViewer);
 		EventBroker.listen("PlayList_playListSelection_mrp-drop-down_changed", this, this.setupPlayList);
-		EventBroker.listen("deleteButton_mrp-button_clicked", this, this.removePlayList);
+		EventBroker.listen("deleteButton_mrp-button_clicked", this, this._askRemovePlaylist);
 		EventBroker.listen("mrp-list_playList_changed", this, this.updateList);
 		EventBroker.listen("editButton_mrp-button_clicked", this, this.editSong);
+		EventBroker.listen(this.editLyricsButton, this.editLyricsButton.events.clicked, this, this._editSondWithoutLyrics);
 		EventBroker.listen("saveSongButton_mrp-button_clicked", this, this.saveSong);
+		EventBroker.listen("saveSongCancelButton_mrp-button_clicked", this, this._hideSongEdit);
 		
 		this.setSongList();
 		this.playList = [];
 		this.playlistUL.hide();
 		this.tempView = true;
 		this.tempPlayListTitle = "1234_mrp_!!!!!";
+		this.listLoaded = false;
 		
 		DataBroker.listen('tempPlayListTitle',this,'tempPlayListTitle');
-		//DataBroker.listen('tempPlayListTitle',this,function(thisComp){return thisComp.tempPlayListTitle});
-		
 		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
+		EventBroker.listen("adminButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
+		
+		EventBroker.listen(this.playlistUL, this.playlistUL.events.listChanged, this, this._listChanged);
 	}
+	
 	
 	
 	tempFunc(){
 	}
 	
+	
+	
+	_clearCurrentList(){
+		this.playList = [];
+		this.playlistUL.setList(this.playList);
+	}
 	setupViewerForTempPlaylist(){	
 		//hide select playlist
 		this.selectPlaylistDiv.hidden = true;
@@ -133,21 +145,29 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.hide();
 		this.deleteButton.hide();
 		this.editButton.hide();
-		this.exitButton.hide();
 		
 		//set viewbool
 		this.tempView = true;
 		
+		//load up the temp list
+		this._loadPlayList(this.tempPlayListTitle);
 		
-		
+		//disable the save buttons as nothing changed
+		this.disableSaves();
 	}
 	setupViewerForSavedPlaylist(){
-		debugger;
 		this.selectPlaylistDiv.hidden = false;
 		this.tempView = false;
+		this.clearButton.hide();
 	}
 	
-	
+	_listChanged(){
+		if(!this.listLoaded){
+			this.listLoaded = true;
+		}else{
+			this.enableSaves();
+		}
+	}
 	disableSaves(){
 		this.saveButton.disable();
 		this.saveOnlyButton.disable();
@@ -156,14 +176,60 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.enable();
 		this.saveOnlyButton.enable();
 	}
-	editSong(){
+	
+	
+	
+	_editSondWithoutLyrics(event, songIndex = 0){
+		for(var songCounter =songIndex;songCounter<this.songList.length;songCounter++){
+			//chec if song settings exist, if they don't then go get them
+			
+			if(Lib.JS.isUndefined(this.songSettings[this.songList[songCounter]])){
+				this._getSongSettingsForList(this.songList[songCounter], songCounter);
+				return false;
+			}else if(this.songSettings[this.songList[songCounter]].lyrics ==="Lyrics Missing"){
+				this.editSong(this.songList[songCounter]);
+				return false;
+			}
+		}
+	}
+	_getSongSettingsForList(songTitle, songIndex){
+		var apiCall = 'api/lyrics?name=' + songTitle;
+		getLyrics(this, apiCall,songTitle,songIndex);
+		
+		async function getLyrics(component, apiCall,songTitle,songIndex){
+			const response = await fetch(apiCall);
+			const data = await response.json();
+
+			if(data){
+				component.songSettings[songTitle] = new SongSettings(data);
+				component._editSondWithoutLyrics({},songIndex);
+			}
+		}
+	}
+	editSong(songTitle = ''){
+		if(songTitle ==='' && this.songListDD.getIndex()===-1){
+			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
+			this.errorBox.show();
+			return false;
+		}
+		
+		
+		
 		this.hidePlaylist();
 		this.savedMessageDiv.hidden = true;
-		var apiCall = 'api/lyrics?name=' + this.songListDD.getValue();
+		this.songIndex = 0;
 		
-		getLyrics(this, apiCall);
+		if(songTitle ===''){
+			songTitle = this.songListDD.getValue();
+		}
 		
-		async function getLyrics(component, apiCall){			
+		var apiCall = 'api/lyrics?name=' + songTitle;
+		
+		
+		
+		getLyrics(this, apiCall,songTitle);
+		
+		async function getLyrics(component, apiCall,songTitle){
 			const response = await fetch(apiCall);
 			const data = await response.json();
 
@@ -173,18 +239,18 @@ class PlaylistPage extends HTMLElement {
 				component.startingPoint.setValue(component.songSettings.startingPoint);
 				component.volume.setValue(component.songSettings.volume);
 				component.songLyrics.setValue(component.songSettings.lyrics);
-				component.songTitle.setValue(component.songListDD.getValue())
+				component.songTitle.setValue(songTitle);
 				component.editSondDiv.hidden = false;
 			}
 		}
-		
-		
 	}
 	saveSong(){
 		//get the new settings
 		this.songSettings.duration = this.duration.getValue();
 		this.songSettings.startingPoint = this.startingPoint.getValue();
 		this.songSettings.volume = this.volume.getValue();
+		this.songSettings.lyrics = this.songLyrics.getValue();
+		
 		
 		//Save the new settings in the file
 		this.songSettings.updateLyrics()
@@ -197,12 +263,46 @@ class PlaylistPage extends HTMLElement {
 		//change the value in the list
 		this.songListDD.updateCurrentSelection(this.songTitle.getValue());
 		
+		this._hideSongEdit();
+		
+		
+		this.addLyricsToDB(this.songTitle.getValue(), this.songSettings.lyrics);
+		
+	}
+	_hideSongEdit(){
 		//hide the edit info
 		this.editSondDiv.hidden = true;
 		
 		//dispaly the saved info
 		this.savedMessageDiv.hidden = false;
+		
+		//if a playlist was shown beforehand then re-show it
+		if(this.songTitle.getValue() !==''){
+			this._showPlaylist();
+		}
 	}
+	addLyricsToDB(songTitle, lyrics){
+		var lyricInfo = {songTitle,lyrics};
+		
+		addSongLyrics(this, lyricInfo);
+		
+		async function addSongLyrics(component, data){
+			
+			var options = {};
+			options.method = 'POST';
+			options.body=JSON.stringify(data);
+			
+			options.headers={'Content-Type':'application/json'}
+			const response = await fetch('/api/addLyrics',options);
+			
+			if(response.status === 200){
+			}else{
+				component.lyricsdiv.firstElementChild.innerText = "An error happened check the server"
+			}
+		}
+	}
+	
+	
 	updateSongTitle(newTitle, oldTitle){
 		var songInfo = {newTitle,oldTitle};
 		
@@ -218,6 +318,9 @@ class PlaylistPage extends HTMLElement {
 			const response = await fetch('/api/changeSongTitle',options);
 			
 			if(response.status === 200){
+				var index = component.songListDD.getIndex();
+				component.songList[index] = data.newTitle;
+				component.songListDD.updateCurrentSelection(data.newTitle);
 			}else{
 			}
 		}
@@ -301,6 +404,7 @@ class PlaylistPage extends HTMLElement {
 		this.songListDD.addList(this.songList);
 	}
 	addSongToList(){
+		
 		//need to test if the song exists
 		if(!this.songList.includes(this.songListDD.getValue())){
 			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
@@ -308,14 +412,29 @@ class PlaylistPage extends HTMLElement {
 			return false;
 		}
 		
+		//need to check the playlist doesn't have the temp name
+		if(this.playlistTitleBox.getValue() === this.tempPlayListTitle){
+			this.errorBox.setError('Error','The playlist title cannot be used please use another');
+			this.errorBox.show();
+			return false;
+		}
+		
+		//need to check the playlist isn't blank
+		if(this.playlistTitleBox.getValue() === ''){
+			this.errorBox.setError('Error','The playlist title cannot be blank');
+			this.errorBox.show();
+			return false;
+		}
+		
 		this.playList.push(this.songListDD.getValue());
 		this.playlistUL.setList(this.playList);
+		this._showPlaylist();
+		this.enableSaves();
 	}
 	saveButDontExit(){
 		this.addPlaylistToViewer(false);
 	}
 	addPlaylistToViewer(isExit = true){
-		debugger;		
 		var playListTitle = this.playlistTitleBox.getValue();
 		
 		if(playListTitle ==='' && this.tempView){
@@ -325,6 +444,8 @@ class PlaylistPage extends HTMLElement {
 		var listInfo = {title:playListTitle,list:JSON.stringify(this.playList)};
 		
 		addPlayList(this, listInfo);
+		
+		this.disableSaves();
 		
 		async function addPlayList(component, data){
 			
@@ -344,7 +465,11 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 	}
-	removePlayList(){	
+	
+	_askRemovePlaylist(){
+		this.areYouSureBox.show();
+	}
+	removePlayList(){
 		var playListTitle = this.playlistTitleBox.getValue();
 		var listInfo = {title:playListTitle,list:JSON.stringify(this.playList)};
 		
@@ -378,6 +503,13 @@ class PlaylistPage extends HTMLElement {
 			
 			if(data){
 				component.playListList = data;
+				
+				for(var listCounter=0;listCounter<data.length;listCounter++){
+					if(data[listCounter] === component.tempPlayListTitle){
+						data.splice(listCounter,1);
+					}
+				}
+				
 				data.unshift("New");
 				component.playlistDD.addList(data);
 				component.playlistDD.sortAlphabetically();
@@ -409,7 +541,8 @@ class PlaylistPage extends HTMLElement {
 				
 				if(component.playListLoadingStats.numLoaded == component.playListLoadingStats.numToLoad){
 					component.playListLoadingStats.loaded = true;
-					component.enableSaves();
+					//commented out because if you save a list - you end up here and the save button will get re-enabled
+					//component.enableSaves();
 				}
 			}else{
 			}
@@ -427,6 +560,9 @@ class PlaylistPage extends HTMLElement {
 			return false;
 		}
 		
+		this._loadPlayList(playListName);
+	}
+	_loadPlayList(playListName){
 		var apiCall = 'api/playlist?name=' + playListName;
 		
 		getPlayList(this, apiCall,playListName);
@@ -444,8 +580,11 @@ class PlaylistPage extends HTMLElement {
 		}
 	}
 	hidePlaylist(){
-		this.playList.length = 0;
+		//this.playList.length = 0;
 		this.playlistUL.hide();
+	}
+	_showPlaylist(){
+		this.playlistUL.show();
 	}
 	hideSongEditlist(){
 		this.editSondDiv.hidden = true;

@@ -16,10 +16,8 @@ if (typeof JSLib === 'undefined') {
         Lib.JS = {};
 		
 		Lib.JS.setInterval = function (caller,callback,interval,paramaters) {
-			debugger;
-			
+		
 			var tempFunc = function(){
-				debugger;
 				callback.call(caller, paramaters);
 			}
 			return setInterval(tempFunc, interval);

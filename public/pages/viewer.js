@@ -22,10 +22,10 @@ class ViewerPage extends HTMLElement {
 	//TODO
 	
 	
-	//ENOENT: no such file or directory, stat 'public/videos/Tiësto .mp4' - somthing wierd happened and it crashed to server
 	
+	//after start button is hit hide it.
 	
-	
+	//have the current song removed from the playlist
 	//have the startbutton look for the temp playListBox
 	//grey out start button until temp play list exists
 	
@@ -44,7 +44,9 @@ class ViewerPage extends HTMLElement {
 	//pause should prob be taken from total time
 	//change the setting to have a speed setting instead of the songe lenght and starting point
 	//add a restart button
+	//remove ability to add lyrics when playing a song
 	
+	//ENOENT: no such file or directory, stat 'public/videos/Tiësto .mp4' - somthing wierd happened and it crashed to server
 
 	constructor() {
 		super();
@@ -99,9 +101,8 @@ class ViewerPage extends HTMLElement {
 	tempFunc(){
 		debugger;
 	}
-	_pingTempPlaylist(a,b,c){
-		debugger;
-		this.setupPlayList(this.tempPlayListTitle);
+	_pingTempPlaylist(){
+		this._updateTempPlayList();
 	}
 	setupViewerForTempPlaylist(){
 		//hide the drop playlist selection drop down
@@ -125,14 +126,12 @@ class ViewerPage extends HTMLElement {
 		this.addLyricsButton.hide();
 		
 		//get the temp playlist name
-		this.tempPlayListTitle = DataBroker.trigger('tempPlayListTitle');		
+		this.tempPlayListTitle = DataBroker.trigger('tempPlayListTitle');
+		this._pingTempPlaylist();		
 		this.pingInterval = Lib.JS.setInterval(this,this._pingTempPlaylist, 3000);
 	}
 	setupViewerForSavedPlaylist(){
-		debugger;
-		this.selectPlaylistDiv.hidden = false;
-		
-		
+		this.selectPlaylistDiv.hidden = false;		
 	}
 	
 	videoPaused(){
@@ -166,6 +165,11 @@ class ViewerPage extends HTMLElement {
 		return this.songList[this.songIndex];
 	}
 	updateLyrics(newLyrics){
+		//check to make sure the song lists have even been loaded
+		if(Lib.JS.isUndefined(this.songList)){
+			return false;
+		}
+		
 		var songTitle = this.getCurrentSongTitle();
 		var lyrics = newLyrics;
 		this.addLyricsToDB(songTitle,lyrics);
@@ -215,9 +219,12 @@ class ViewerPage extends HTMLElement {
 			}
 		}
 	}
-	setSongList(list){
+	setSongList(list, loadVideo = true){
 		this.songList = list;
-		this.loadVideo();
+		
+		if(loadVideo){
+				this.loadVideo();
+		}
 	}
 	setLyrics(){
 		var apiCall = 'api/lyrics?name=' + this.songList[this.songIndex];
@@ -293,7 +300,7 @@ class ViewerPage extends HTMLElement {
 			return false;
 		}
 		
-		var apiCall = 'api/playlist?name=' + playListName;
+		var apiCall = 'api/playlist?name=' + this.tempPlayListTitle;
 		
 		getPlayList(this, apiCall);
 		
@@ -303,6 +310,24 @@ class ViewerPage extends HTMLElement {
 
 			if(data){
 				component.setSongList(JSON.parse(data));
+			}else{
+			}
+		}
+	}
+	_updateTempPlayList(){
+		
+		var apiCall = 'api/playlist?name=' + this.tempPlayListTitle;
+		
+		getPlayList(this, apiCall);
+		
+		async function getPlayList(component, apiCall){			
+			const response = await fetch(apiCall);
+			const data = await response.json();
+
+			if(data){
+				component.setSongList(JSON.parse(data), false);
+				component.startButton.textContent = "Start";
+				component.startButton.enable();
 			}else{
 			}
 		}

@@ -10,7 +10,7 @@ if (Lib.JS.isUndefined(Broker)) {
         this.strConnections = [];
         this.objConnections = [];
 
-        var log = new Logger('Broker.js', CLL.warn);
+        var log = new Logger('Broker.js', CLL.debug);
 
         this.addListener = function () {
             if(arguments.length ===3){
@@ -59,7 +59,7 @@ if (Lib.JS.isUndefined(EventBroker)) {
 
     var creation = function () {
 	
-        var log = new Logger('EventBroker.js', CLL.warn);
+        var log = new Logger('EventBroker.js', CLL.debug);
 		
 		this.listenAll = 'EventBroker_all';
 		this.listen = function () {
@@ -151,7 +151,7 @@ if (Lib.JS.isUndefined(EventBroker)) {
 			var objID = obj.id || obj.ID;
 			
 			if (Lib.JS.isUndefined(EventBroker.objConnections[objID])) {
-                log.debug('the event ' + obj.ID + ':' + event + ' does not have any listeners');
+                log.debug('the event ' + objID + ':' + event + ' does not have any listeners');
                 return false;
             }
 			
@@ -196,7 +196,7 @@ if (Lib.JS.isUndefined(DataBroker)) {
 
     var creation = function () {
 
-        var log = new Logger('DataBroker.js', CLL.warn);
+        var log = new Logger('DataBroker.js', CLL.debug);
 		
         this.listen = function (dataCall, listenerArgs, callback) {
 

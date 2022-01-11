@@ -76,14 +76,22 @@ setup the ability to pass in the header and message as an attribute
 		
 		Lib.Comp.setupDefualtProperties(this, 'div');
 		
+		this.events = {};
+		this.events.clicked = 'clicked';
+		this.events.shown = 'shown';
+		this.events.hidden = 'hidden';
+		this.events.yes = 'yes';
+		this.events.no = 'no';
+		this.events.closed = 'closed';
 	}
 	setError(title, message){
-		this.changeHeader("Error");
-		this.changeMessage('Song title does not exist, please choose from the list');
+		this.changeHeader(title);
+		this.changeMessage(message);
 		this.titleElement.style.backgroundColor = '#ef6776';
-		debugger;
 	}
-	setYesNo(){
+	setYesNo(title, message){
+		this.changeHeader(title);
+		this.changeMessage(message);
 		this.closeButton.hide();
 		this.yesButton.show();
 		this.noButton.show();
@@ -98,6 +106,7 @@ setup the ability to pass in the header and message as an attribute
 		//check if the close button was pressed
 		if(event.path[3] === this.shadowRoot.querySelector('mrp-button') || event.path[2] === this.shadowRoot.querySelector('mrp-button')){
 			this.close();
+			EventBroker.trigger(this,this.events.no);
 			return false;
 		}
 		
@@ -107,16 +116,19 @@ setup the ability to pass in the header and message as an attribute
 		
 		var triggerObj = {element:this, event:event};
 
-		if(event.path[3].id === 'yes' || event.path[2] === 'yes'){
+		if(event.path[3].id === 'yes' || event.path[2] === 'yes' || event.path[2].id === 'yes' ){
 			triggerObj.answer = 'yes';
 			this.close();
-		}else if(event.path[3].id === 'no' || event.path[2] === 'no'){
+			EventBroker.trigger(this,this.events.yes);
+		}else if(event.path[3].id === 'no' || event.path[2] === 'no' || event.path[2].id === 'no'){
 			triggerObj.answer = 'no';
 			this.close();
+			EventBroker.trigger(this,this.events.no);
 		}
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-alert_clcked',triggerObj);
+			EventBroker.trigger(this,this.events.clicked);
 		}else if(this['class'] !== ""){
 			EventBroker.trigger(this['class'] + '_mrp-alert_clcked',triggerObj);
 		}else{
@@ -129,10 +141,12 @@ setup the ability to pass in the header and message as an attribute
 	show(){
 		if(this.shadowRoot.querySelector(".hidden")!= null){
 			this.shadowRoot.querySelector(".hidden").className = 'alert';
+			EventBroker.trigger(this,this.events.shown);
 		}
 	}
 	hide(){
 		this.close();
+		EventBroker.trigger(this,this.events.hidden);
 	}
 	close(){
 		if(this.shadowRoot.querySelector(".alert")!= null){

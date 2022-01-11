@@ -6,6 +6,10 @@ MRPList_template.innerHTML = `
 
 //add in the adlity to set a defualt value
 
+//TODO
+//the buttons listeners would probabyl not work will if multiple lists existed in the same app
+
+
 class MRPList extends HTMLElement {
 	constructor() {
 		super();			
@@ -21,6 +25,13 @@ class MRPList extends HTMLElement {
 		EventBroker.listen("removeSongFromList_playList_mrp-button_clicked", this, this._removeFromList);
 		EventBroker.listen("moveSongFromListUp_playList_mrp-button_clicked", this, this._moveUp);
 		EventBroker.listen("moveSongFromListDown_playList_mrp-button_clicked", this, this._moveDown);
+		
+		this.events = {};
+		this.events.listChanged = 'listChanged';
+		this.events.shown = 'shown';
+		this.events.hidden = 'hidden';
+		this.events.disabled = 'disabled';
+		this.events.enabled = 'enabled';
 	}
 	addList(list){
 		//this.list = list;
@@ -64,6 +75,7 @@ class MRPList extends HTMLElement {
 		}
 		this.listUL.innerHTML = innerHTML;
 		EventBroker.trigger("mrp-list_"+this.id+"_changed", this);
+		EventBroker.trigger(this,this.events.listChanged);
 	}
 
 	_removeFromList(triggerArgs){
@@ -99,17 +111,21 @@ class MRPList extends HTMLElement {
 	}
 	hide(){
 		this.style.display = "none";
+		EventBroker.trigger(this,this.events.hidden);
 	}
 	show(){
 		this.style.display = "";
+		EventBroker.trigger(this,this.events.shown);
 	}
 	disable(){
 		this.listUL.disabled = true;
-		this.listUL.style.backgroundColor = '#e5e6e7'
+		this.listUL.style.backgroundColor = '#e5e6e7';
+		EventBroker.trigger(this,this.events.disabled);
 	}
 	enable(){
 		this.listUL.disabled = false;
-		this.listUL.style.backgroundColor = '#ffffff'
+		this.listUL.style.backgroundColor = '#ffffff';
+		EventBroker.trigger(this,this.events.enabled);
 	}
 }
 window.customElements.define('mrp-list', MRPList);
