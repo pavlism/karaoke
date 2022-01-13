@@ -20,13 +20,16 @@ Playlist_template.innerHTML = `
 	</div>
 	<mrp-list advanced id="playList">Play List</mrp-list>
 	<div id="editSongDiv">
-		Song Title:<mrp-text-box id='songTitle' size='50'></mrp-text-box>
-		Duration:<mrp-text-box id='duration'  number></mrp-text-box>
-		Starting Point:<mrp-text-box id='startingPoint'  number></mrp-text-box>
-		Volume:<mrp-text-box id='volume'  number></mrp-text-box>
-		Lyrics:<mrp-text-area id='songLyrics'></mrp-text-area>
-		<mrp-button primary id="saveSongButton" number>Save</mrp-button>
-		<mrp-button primary id="saveSongCancelButton" number>Cancel</mrp-button>
+		<div>
+			Song Title:<mrp-text-box id='songTitle' size='50'></mrp-text-box>
+			Speed%:<mrp-text-box id='speed' number></mrp-text-box>
+			Volume%:<mrp-text-box id='volume' number></mrp-text-box>
+			<mrp-button primary id="saveSongButton" number>Save</mrp-button>
+			<mrp-button primary id="saveSongCancelButton" number>Cancel</mrp-button>
+		</div>
+		<div>
+			Lyrics:<mrp-text-area rows=20 cols=100 id='songLyrics'></mrp-text-area>
+		</div>
 	</dv>
 	<div id="savedDiv">
 		Save Complete
@@ -34,12 +37,17 @@ Playlist_template.innerHTML = `
 `
 class PlaylistPage extends HTMLElement {
 //todo	
-						
-	//when added lyrics the song started to play
-	//move the lyrics box in the edit song to be below the rest of the info and make it bigger
+
+	//using the next button before lyric scrolling ends messes up the next one
+
+	//handle saving the settings
 	
 	//song edit need to be simpler - just like a speed settings
+	
+	//make sure the saved settings works
+	
 	//add ability to puase the song for a specific duration in the lyrics
+	
 	//add ability to test a song and add pauses as you are testing
 	
 	//hide temp button
@@ -68,8 +76,7 @@ class PlaylistPage extends HTMLElement {
 		this.editSondDiv = this.shadowRoot.querySelector('#editSongDiv');
 		this.savedMessageDiv = this.shadowRoot.querySelector('#savedDiv');
 		this.songTitle = this.shadowRoot.querySelector('#songTitle');
-		this.duration = this.shadowRoot.querySelector('#duration');
-		this.startingPoint = this.shadowRoot.querySelector('#startingPoint');
+		this.speed = this.shadowRoot.querySelector('#speed');
 		this.volume = this.shadowRoot.querySelector('#volume');
 		this.songLyrics = this.shadowRoot.querySelector('#songLyrics');
 		this.clearButton = this.shadowRoot.querySelector('#clearButton');
@@ -206,7 +213,7 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 	}
-	editSong(songTitle = ''){
+	editSong(songTitle = ''){		
 		if(songTitle ==='' && this.songListDD.getIndex()===-1){
 			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
 			this.errorBox.show();
@@ -219,7 +226,7 @@ class PlaylistPage extends HTMLElement {
 		this.savedMessageDiv.hidden = true;
 		this.songIndex = 0;
 		
-		if(songTitle ===''){
+		if(songTitle ==='' || !Lib.JS.isString(songTitle)){
 			songTitle = this.songListDD.getValue();
 		}
 		
@@ -535,7 +542,7 @@ class PlaylistPage extends HTMLElement {
 			
 			if(data){
 				component.playListLoadingStats.numLoaded++;
-				if(data != 'playlist Missing'){
+				if(Lib.JS.isDefined(data) && Lib.JS.isUndefined(data.errno)){
 						component.allPlaylists[playListName] = JSON.parse(data);
 				}
 				

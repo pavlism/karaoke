@@ -22,6 +22,8 @@ class ViewerPage extends HTMLElement {
 	//TODO
 	
 	
+	//Lyrics don't often finish - they stop part way through
+	
 	
 	//after start button is hit hide it.
 	
@@ -86,7 +88,7 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen(["Viewer_playListSelection_mrp-drop-down_changed"], this, this.setupPlayList);
 		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
 		EventBroker.listen("temp_mrp-button_clicked", this, this.tempFunc);
-		EventBroker.listen("videoLoaded", this, this.startVideo);
+		EventBroker.listen("videoLoaded", this, this.setLyrics);
 		EventBroker.listen("videoPaused", this, this.videoPaused);
 		EventBroker.listen("videoPlayed", this, this.videoPlayed);
 		EventBroker.listen("updateLyrics", this, this.updateLyrics);
@@ -142,7 +144,7 @@ class ViewerPage extends HTMLElement {
 	}
 	startVideo(){
 		this.lyricsObj.addText(this.getCurrentSongTitle() + '\n\n' + this.songSettings.lyrics);
-		this.lyricsObj.start(this.songSettings.getDuration(),this.songSettings.getStartingPoint());
+		this.lyricsObj.start(this.songSettings.getSpeed(),this.songSettings.getTimming(),this.songSettings.getDuration());
 		
 		//set voloume
 		this.videoPlayer.volume = this.songSettings.volume/100; 
@@ -214,7 +216,7 @@ class ViewerPage extends HTMLElement {
 			const data = await response.json();
 			
 			if(data){
-				component.setSongList(data);
+				component.setSongList(data,false);
 				component.fullSongList = data;
 			}
 		}
@@ -245,6 +247,7 @@ class ViewerPage extends HTMLElement {
 					component.showAddingLyrics();
 				}else{
 					component.hideAddingLyrics();
+					component.startVideo();
 				}
 			}else{
 				component.lyricsdiv.firstElementChild.innerText = component.getCurrentSongTitle() + '\n\n' +'lyrics missing';
@@ -262,7 +265,6 @@ class ViewerPage extends HTMLElement {
 	loadVideo(){
 		this.videoPlayer.src = "http://localhost:8080/api/video?name=" + this.songList[this.songIndex];
 		this.videoPlayer.autoplay = true;
-		this.setLyrics();
 	}
 	
 	videoEnded(){
@@ -291,8 +293,11 @@ class ViewerPage extends HTMLElement {
 	}
 	setupPlayList(playListName){
 		
-		if(Lib.JS.isUndefined(playListName)){
+		//if a playslit wasn't sent in then grab it from the text box
+		if(Lib.JS.isUndefined(playListName) || !Lib.JS.isString(playListName)){
 			playListName = this.playListBox.getValue();
+		}else{
+			playListName = this.tempPlayListTitle;
 		}
 
 		if(playListName==="All"){
@@ -300,7 +305,7 @@ class ViewerPage extends HTMLElement {
 			return false;
 		}
 		
-		var apiCall = 'api/playlist?name=' + this.tempPlayListTitle;
+		var apiCall = 'api/playlist?name=' + playListName;
 		
 		getPlayList(this, apiCall);
 		

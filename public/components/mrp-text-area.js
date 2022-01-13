@@ -48,7 +48,7 @@ class MRPTextArea extends HTMLElement {
 
 		Lib.Comp.setupDefualtProperties(this, 'textarea');
 		
-		if(this.getAttribute('rows')===""){
+		if(this.getAttribute('rows')!== null){
 			this.shadowRoot.querySelector('textarea').rows = this.getAttribute('rows');
 		}
 

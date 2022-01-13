@@ -45,10 +45,9 @@ MRPMarquee_template.innerHTML = `
 	  }
 	}
 	</style>
-
 	<div id="scroll-container">
 		<div id="scroll-text">
-		<div>
+		</div>
 	</div>
 `
 
@@ -64,6 +63,7 @@ class MRPMarquee extends HTMLElement {
 		//this.div.style = this.style;
 		this.containter.style.cssText = this.style.cssText;
 		this.isPaused = true;
+		this.firstPlaythrough = true;
 
 		//EventBroker.listen("moveSongFromListDown_playList_mrp-button_clicked", this, this._moveDown);
 	}
@@ -75,37 +75,94 @@ class MRPMarquee extends HTMLElement {
 		this.lyricsDiv.style.animationPlayState = 'running';
 		this.isPaused = false;
 	}
-	start(durationInSeconds = 100, startingPoint = 0){
-		this.durationInSeconds = durationInSeconds;
-		this.startingPoint = startingPoint;
+	_calcStartingPont(duration){
+		var lineHeight = this.lyricsDiv.children[1].offsetHeight;
+		var extraPixelsBeyondHeight = this.lyricsDiv.scrollHeight - this.lyricsDiv.offsetHeight;
+		
+		//rough estimate
+		var numExtraLines = Math.round(extraPixelsBeyondHeight/lineHeight);
+		
+		if(extraPixelsBeyondHeight <0){
+			//iff too small
+			return 0;
+		}else{
+			//found some good measurments and averaged the rest outer - used the offset/duration to get the multipleyer numbers
+			//at 2 lines return -14
+			//at 13 lines return -107
+			//at 25 lines return -147
+			//at 37 lines return -170
+			//at 48 lines return -184
+			//at 60 lines return -194
+			
+			var multiplyer = -38.8;
+			
+			if(numExtraLines<13){
+				multiplyer = -1*Math.round(1.69 * numExtraLines);
+			}else if(numExtraLines<25){
+				multiplyer = -1*Math.round(20.73 + 0.66 * (numExtraLines-12));
+			}else if(numExtraLines<37){
+				multiplyer = -1*Math.round(29.02 + 0.38 * (numExtraLines-24));
+			}else if(numExtraLines<48){
+				multiplyer = -1*Math.round(33.77 + 0.23 * (numExtraLines-36));
+			}else if(numExtraLines<60){
+				multiplyer = -1*Math.round(36.63 + 0.17 * (numExtraLines-48));
+			}
+			
+			var startPoint = Math.round(multiplyer * duration /100);
+			console.log("startPoint: " + startPoint);
+			return startPoint;
+		}
+	}
+	start(speed = 100,timming = {},durationInSeconds = 100){
+
+			//debugger;		
+		speed = 100;
+		this.durationInSeconds = Math.round(durationInSeconds*(100/speed) * 100) / 100;		
+		
+		this.durationInSeconds = 500;
 		
 		this.containter.removeChild(this.lyricsDiv);
 		this.lyricsDiv = document.createElement("div");
 		this.lyricsDiv.id = "scroll-text";
-		this.lyricsDiv.innerText = this.text;
+		this.lyricsDiv.textContent = '';
+		
+		var lines = this.text.split('\n')
+		for(var lineCounter = 0;lineCounter<lines.length;lineCounter++){
+			var DIV =  document.createElement("DIV");
+			DIV.style.minHeight = "1em";
+			DIV.textContent = lines[lineCounter] + ' ';
+			this.lyricsDiv.appendChild(DIV);
+		}
+		
 		this.containter.appendChild(this.lyricsDiv)
+		
+		this.startingPoint = this._calcStartingPont(this.durationInSeconds);
+		
+		//this.startingPoint = -194;
 		
 		this.lyricsDiv.style.animationDelay = this.startingPoint.toString() + 's';
 		this.lyricsDiv.style.webkitAnimationDelay = this.startingPoint.toString() + 's';
+		
 		
 		this.lyricsDiv.style.animationDuration = this.durationInSeconds.toString() + 's';
 		this.lyricsDiv.style.webkitAnimationDuration =  this.durationInSeconds.toString() + 's';
 		this.lyricsDiv.style.animationPlayState = 'running';
 		this.isPaused = false;
 		
-		//since the animation doesn't go all the way up for some reason I need to adjust the height of the inner div
-		var numLines = 0;
+		var heightP = 100;
+		//get the extra pixel neded to show everything
+		var extraPixalsThatWontShow = this.lyricsDiv.scrollHeight - this.lyricsDiv.offsetHeight*2;
 		
-		var lines = this.text.split('\n');
-		for(var lineCounter =0;lineCounter<lines.length;lineCounter++){
-			numLines++;
-			if(lines[lineCounter].length>45){
-				numLines++;
-			}
-		}
+		//add in the extra part so the text ends up half way up
+		extraPixalsThatWontShow = extraPixalsThatWontShow + this.lyricsDiv.offsetHeight/2
+		var extraPercetage = Math.round(extraPixalsThatWontShow / this.lyricsDiv.offsetHeight*100);
+		this.lyricsDiv.style.height = (heightP + extraPercetage)+ '%';
 		
-		var newHeight = 110 + Math.round((numLines - 56)/3*10);
-		this.lyricsDiv.style.height = newHeight + '%';
+		console.log('scrollHeight:' + this.lyricsDiv.scrollHeight);
+		console.log('heightP:' + (heightP + extraPercetage));
+		console.log('durationInSeconds:' + this.durationInSeconds);
+		console.log('startingPoint:' + this.startingPoint);
+		
 	}
 	addText(text){
 		this.text = text;

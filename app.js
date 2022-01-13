@@ -189,9 +189,11 @@ app.get('/api/playlist',(request, response)=>{
 	
 	const path = 'public/playlists/' + request.query.name + '.txt'
 	
+	console.log('path: ' + path);
+	
 	fs.readFile(path, (error, data) => {
 		if(error) {
-			response.json('playlist Missing');
+			response.json(error);
 		}else{
 			response.json(data.toString());
 		}
