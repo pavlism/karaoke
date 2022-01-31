@@ -3,7 +3,8 @@ class SongSettings{
 		this.videoPlayer = videoPlayer;
 		
 		var firstLine = lyricData.split('\n')[0]
-		
+		this.saveLyrics = '';
+
 		//Cehck first line to settings Object
 		//if it does then setup the settings
 		//TODO need the duration for legacy stuff can take out after updated all the lyrics settings
@@ -57,15 +58,19 @@ class SongSettings{
 		
 		return this.startingPoint;
 	}
+	getLyricsToSave(){
+		return this.saveLyrics;
+	}
 	updateLyrics(){
-		if(this.startingPoint === -1 ||this.duration === -1 || this.lyrics === 'Lyrics Missing'){
+		if(this.speed === -1 ||this.volume === -1 || this.lyrics === 'Lyrics Missing'){
 			return false;
 		}
 				
-		var settings = {duration:this.duration, startingPoint:this.startingPoint, volume:this.volume};
-		var newLyrics = JSON.stringify(settings) + '\n' + this.lyrics
-		EventBroker.trigger('updateLyrics',newLyrics);
+		var settings = {speed:this.speed, volume:this.volume, timming:this.timming};
+		this.saveLyrics = JSON.stringify(settings) + '\n' + this.lyrics;
+		EventBroker.trigger('updateLyrics',this.lyrics);
 	}
+
 }
 
 SongSettings.createEmpty = function(){

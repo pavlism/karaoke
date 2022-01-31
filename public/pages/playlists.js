@@ -17,6 +17,7 @@ Playlist_template.innerHTML = `
 		<mrp-button primary id="exitButton">Exit</mrp-button>
 		<mrp-button primary id="clearButton">Clear List</mrp-button>
 		<mrp-button primary id="temp2">temp</mrp-button>
+		<mrp-button primary id="addButton">Add</mrp-button>
 	</div>
 	<mrp-list advanced id="playList">Play List</mrp-list>
 	<div id="editSongDiv">
@@ -26,6 +27,7 @@ Playlist_template.innerHTML = `
 			Volume%:<mrp-text-box id='volume' number></mrp-text-box>
 			<mrp-button primary id="saveSongButton" number>Save</mrp-button>
 			<mrp-button primary id="saveSongCancelButton" number>Cancel</mrp-button>
+			<mrp-button primary id="addPause" number>Add 10 second Pause</mrp-button>
 		</div>
 		<div>
 			Lyrics:<mrp-text-area rows=20 cols=100 id='songLyrics'></mrp-text-area>
@@ -38,20 +40,13 @@ Playlist_template.innerHTML = `
 class PlaylistPage extends HTMLElement {
 //todo	
 
-	//using the next button before lyric scrolling ends messes up the next one
-
-	//handle saving the settings
-	
-	//song edit need to be simpler - just like a speed settings
-	
-	//make sure the saved settings works
-	
-	//add ability to puase the song for a specific duration in the lyrics
+	//add ability to pause the song for a specific duration in the lyrics
 	
 	//add ability to test a song and add pauses as you are testing
-	
+
 	//hide temp button
-	
+	//can edit a song when nothign was chosen - grey out the edit button
+
 	constructor() {
 		super();
 		
@@ -68,7 +63,8 @@ class PlaylistPage extends HTMLElement {
 		this.editButton = this.shadowRoot.querySelector('#editButton');
 		this.editLyricsButton = this.shadowRoot.querySelector('#editLyricsButton');
 		this.exitButton = this.shadowRoot.querySelector('#exitButton');
-		
+		this.addPause = this.shadowRoot.querySelector('#addPause');
+
 		this.playlistUL = this.shadowRoot.querySelector('mrp-list');
 		this.playlistTitleBox = this.shadowRoot.querySelector('mrp-text-box');
 		this.playlistDD = this.shadowRoot.querySelector('mrp-drop-down');
@@ -84,7 +80,8 @@ class PlaylistPage extends HTMLElement {
 		this.errorBox = this.shadowRoot.querySelector('#errorAlert');
 		this.areYouSureBox = this.shadowRoot.querySelector('#areYouSureAlert');
 		this.areYouSureBox.setYesNo("Warning", "Are you sure you want to delete the playlist?");
-		
+
+		EventBroker.listen(this.addPause, this.addPause.events.clicked,this, this._addPause);
 		EventBroker.listen(this.areYouSureBox, this.areYouSureBox.events.yes, this, this.removePlayList);
 		EventBroker.listen("temp2_mrp-button_clicked", this, this.tempFunc);
 		EventBroker.listen(this.clearButton,this.clearButton.events.clicked, this, this._clearCurrentList);
@@ -120,7 +117,8 @@ class PlaylistPage extends HTMLElement {
 		this.listLoaded = false;
 		
 		DataBroker.listen('tempPlayListTitle',this,'tempPlayListTitle');
-		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
+		EventBroker.listen("tempPlaylistButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
+		EventBroker.listen("playlistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 		EventBroker.listen("adminButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 		
@@ -131,9 +129,11 @@ class PlaylistPage extends HTMLElement {
 	
 	tempFunc(){
 	}
-	
-	
-	
+
+	_addPause(){
+		this.songLyrics.insertTextAtCursor('{Pause10}');
+	}
+
 	_clearCurrentList(){
 		this.playList = [];
 		this.playlistUL.setList(this.playList);
@@ -152,9 +152,13 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.hide();
 		this.deleteButton.hide();
 		this.editButton.hide();
+		this.editLyricsButton.hide();
 		
 		//set viewbool
 		this.tempView = true;
+
+		this.shadowRoot.querySelector('#editSongDiv').id
+		this.shadowRoot.querySelector('#editButton').hid
 		
 		//load up the temp list
 		this._loadPlayList(this.tempPlayListTitle);
@@ -166,8 +170,8 @@ class PlaylistPage extends HTMLElement {
 		this.selectPlaylistDiv.hidden = false;
 		this.tempView = false;
 		this.clearButton.hide();
+		this.editButton.show();
 	}
-	
 	_listChanged(){
 		if(!this.listLoaded){
 			this.listLoaded = true;
@@ -183,9 +187,6 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.enable();
 		this.saveOnlyButton.enable();
 	}
-	
-	
-	
 	_editSondWithoutLyrics(event, songIndex = 0){
 		for(var songCounter =songIndex;songCounter<this.songList.length;songCounter++){
 			//chec if song settings exist, if they don't then go get them
@@ -242,9 +243,8 @@ class PlaylistPage extends HTMLElement {
 
 			if(data){
 				component.songSettings = new SongSettings(data);
-				component.duration.setValue(component.songSettings.duration);
-				component.startingPoint.setValue(component.songSettings.startingPoint);
 				component.volume.setValue(component.songSettings.volume);
+				component.speed.setValue(component.songSettings.speed)
 				component.songLyrics.setValue(component.songSettings.lyrics);
 				component.songTitle.setValue(songTitle);
 				component.editSondDiv.hidden = false;
@@ -253,12 +253,10 @@ class PlaylistPage extends HTMLElement {
 	}
 	saveSong(){
 		//get the new settings
-		this.songSettings.duration = this.duration.getValue();
-		this.songSettings.startingPoint = this.startingPoint.getValue();
+		this.songSettings.speed = this.speed.getValue();
 		this.songSettings.volume = this.volume.getValue();
 		this.songSettings.lyrics = this.songLyrics.getValue();
-		
-		
+
 		//Save the new settings in the file
 		this.songSettings.updateLyrics()
 		
@@ -273,7 +271,7 @@ class PlaylistPage extends HTMLElement {
 		this._hideSongEdit();
 		
 		
-		this.addLyricsToDB(this.songTitle.getValue(), this.songSettings.lyrics);
+		this.addLyricsToDB(this.songTitle.getValue(), this.songSettings.getLyricsToSave());
 		
 	}
 	_hideSongEdit(){
@@ -308,8 +306,6 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 	}
-	
-	
 	updateSongTitle(newTitle, oldTitle){
 		var songInfo = {newTitle,oldTitle};
 		
@@ -472,7 +468,6 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 	}
-	
 	_askRemovePlaylist(){
 		this.areYouSureBox.show();
 	}

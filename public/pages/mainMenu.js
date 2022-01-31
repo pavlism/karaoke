@@ -10,7 +10,7 @@ MainMenu_template.innerHTML = `
 
 	<div class="center">
 		<div><mrp-button primary huge id="videoPlayerButton">Video Player</mrp-button></div>
-		<div><mrp-button primary huge id="playlistButton">Setup Playlist</mrp-button></div>
+		<div><mrp-button primary huge id="tempPlaylistButton">Setup Playlist</mrp-button></div>
 		<div><mrp-button primary huge id="adminButton">Admin</mrp-button></div>
 		<div><mrp-button primary huge id="useSavedPlaylistButton">Use Saved Playlist</mrp-button></div>
 	</div>

@@ -41,11 +41,19 @@ class MRPTextArea extends HTMLElement {
 	constructor() {
 		super();
 		this.addEventListener('input',this._handleChange);
-			
+
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MRPTextArea_template.content.cloneNode(true));
 		this.textArea = this.shadowRoot.querySelector('textarea');
 
+		var myObj = this.textArea;
+		for(var key in myObj){
+			if(key.search('on') === 0) {
+				//myObj.addEventListener(key.slice(2), this._handleChange)
+			}
+		}
+
+		this.currentCursorPosition = 0;
 		Lib.Comp.setupDefualtProperties(this, 'textarea');
 		
 		if(this.getAttribute('rows')!== null){
@@ -117,11 +125,12 @@ class MRPTextArea extends HTMLElement {
 		}
 	}
 	addText(text){
-		this.shadowRoot.querySelector('textarea').value = text;
+		this.textArea.value = text;
 		var event = {};
 		event.path = [];
 		event.path.push({value:text});
 		event.name = "addText()"
+		event.target = this.textArea;
 		this._handleChange(event);
 	}
 	getValue(){	
@@ -143,6 +152,39 @@ class MRPTextArea extends HTMLElement {
 	enable(){
 		this.textArea.disabled = false;
 		this.textArea.style.backgroundColor = '#ffffff'
+	}
+	getCursorPosition(){
+		return this.textArea.selectionStart;
+	}
+	insertTextAt(position, text, keepCursor = true){
+		var left = this.currentText.substr(0,position);
+		var right = this.currentText.substr(position, this.currentText.length);
+		this.currentText = left + text + right;
+		this.setValue(this.currentText);
+
+		//make sure the cursor position changes
+		if(keepCursor){
+			this.textArea.addEventListener('select', this._resetCursorPosition,{once : true});
+		}
+	}
+	insertTextAtCursor(text, keepCursor = true){
+		var position = this.getCursorPosition();
+		var left = this.currentText.substr(0,position);
+		var right = this.currentText.substr(position, this.currentText.length);
+		this.currentText = left + text + right;
+		this.setValue(this.currentText);
+		this.textArea.selectionStart = position;
+		this.textArea.cursorPosition = position;
+		this.currentCursorPosition = position;
+
+		//make sure the cursor position changes
+		if(keepCursor){
+			this.textArea.addEventListener('select', this._resetCursorPosition,{once : true});
+		}
+	}
+	_resetCursorPosition(event){
+		this.selectionStart = this.cursorPosition;
+		this.selectionEnd = this.cursorPosition;
 	}
 }
 

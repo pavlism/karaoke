@@ -115,11 +115,13 @@ class MRPMarquee extends HTMLElement {
 	}
 	start(speed = 100,timming = {},durationInSeconds = 100){
 
-			//debugger;		
-		speed = 100;
+		//deal with the pauses
+		this._dealWithPauses();
+
+		//speed = 100;
 		this.durationInSeconds = Math.round(durationInSeconds*(100/speed) * 100) / 100;		
 		
-		this.durationInSeconds = 500;
+		//this.durationInSeconds = 500;
 		
 		this.containter.removeChild(this.lyricsDiv);
 		this.lyricsDiv = document.createElement("div");
@@ -158,11 +160,19 @@ class MRPMarquee extends HTMLElement {
 		var extraPercetage = Math.round(extraPixalsThatWontShow / this.lyricsDiv.offsetHeight*100);
 		this.lyricsDiv.style.height = (heightP + extraPercetage)+ '%';
 		
-		console.log('scrollHeight:' + this.lyricsDiv.scrollHeight);
-		console.log('heightP:' + (heightP + extraPercetage));
-		console.log('durationInSeconds:' + this.durationInSeconds);
-		console.log('startingPoint:' + this.startingPoint);
+//		console.log('scrollHeight:' + this.lyricsDiv.scrollHeight);
+//		console.log('heightP:' + (heightP + extraPercetage));
+//		console.log('durationInSeconds:' + this.durationInSeconds);
+//		console.log('startingPoint:' + this.startingPoint);
 		
+	}
+	_dealWithPauses(){
+		debugger;
+		//remove the pauses from the lyrics
+
+		//use the duration to estimated what time the pauses will show up.
+		//Each line should see and equal amount of time on the screen, so duration/numlines *get real lines show* with give you how long each line will take
+		//then simple calcs to determine when to put in the pause
 	}
 	addText(text){
 		this.text = text;

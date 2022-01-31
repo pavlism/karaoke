@@ -24,7 +24,7 @@ class ViewerPage extends HTMLElement {
 	
 	//Lyrics don't often finish - they stop part way through
 	
-	
+	//next button doesn't change the title at the bottom - id=songTitleForAddLyrics
 	//after start button is hit hide it.
 	
 	//have the current song removed from the playlist
@@ -33,8 +33,8 @@ class ViewerPage extends HTMLElement {
 	
 	//once a song is played remove it from the list
 	//if playlist changes then update autp randomize it
-	
-	
+
+	//using the next button before lyric scrolling ends messes up the next one
 	//make sure video is fully loaded before playing (validate on laptop)
 	//add in main menu botton
 
