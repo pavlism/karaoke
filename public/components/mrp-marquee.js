@@ -64,26 +64,34 @@ class MRPMarquee extends HTMLElement {
 		this.containter.style.cssText = this.style.cssText;
 		this.isPaused = true;
 		this.firstPlaythrough = true;
+		this.pauses = [];
+		this.totalTimePauses = 0;
 
-		//EventBroker.listen("moveSongFromListDown_playList_mrp-button_clicked", this, this._moveDown);
+		this.events = {};
+		this.events.endedEarly = 'endedEarly';
+		this.events.paused = 'paused';
+		this.events.unpaused = 'unpaused';
 	}
 	pause(){
 		this.lyricsDiv.style.animationPlayState = 'paused'
 		this.isPaused = true
+		EventBroker.triggerBoth(this,this.events.paused,this.id + '_mrp-Marquee');
 	}
 	unPause(){
 		this.lyricsDiv.style.animationPlayState = 'running';
 		this.isPaused = false;
+		EventBroker.triggerBoth(this,this.events.unpaused,this.id + '_mrp-Marquee');
 	}
 	_calcStartingPont(duration){
+
 		var lineHeight = this.lyricsDiv.children[1].offsetHeight;
 		var extraPixelsBeyondHeight = this.lyricsDiv.scrollHeight - this.lyricsDiv.offsetHeight;
-		
+
 		//rough estimate
 		var numExtraLines = Math.round(extraPixelsBeyondHeight/lineHeight);
-		
+
 		if(extraPixelsBeyondHeight <0){
-			//iff too small
+			//if too small
 			return 0;
 		}else{
 			//found some good measurments and averaged the rest outer - used the offset/duration to get the multipleyer numbers
@@ -109,17 +117,34 @@ class MRPMarquee extends HTMLElement {
 			}
 			
 			var startPoint = Math.round(multiplyer * duration /100);
-			console.log("startPoint: " + startPoint);
+			//console.log("startPoint: " + startPoint);
 			return startPoint;
 		}
 	}
-	start(speed = 100,timming = {},durationInSeconds = 100){
+	start(speed = 100,timing = {endEarly:0},durationInSeconds = 100){
 
-		//deal with the pauses
-		this._dealWithPauses();
+		//TODO remove below
+		timing.endEarly = 120;
+
+		debugger;
+
+		//remove the pauses from the lyrics
+		this.text = this._removeThePausesFromText();
+		//console.log('speed:' + speed);
+
+		//deal with ending early
+		this._setupEarlyEnding(timing.endEarly, durationInSeconds);
+		durationInSeconds = durationInSeconds - timing.endEarly;
 
 		//speed = 100;
-		this.durationInSeconds = Math.round(durationInSeconds*(100/speed) * 100) / 100;		
+		this.durationInSeconds = Math.round(durationInSeconds*(100/speed) * 100) / 100;
+
+		//not sure why 65%, but the text was scrolling too fast on default 65% seems
+		this.durationInSeconds = this.durationInSeconds /0.70;
+
+		this.durationInSeconds = this.durationInSeconds-this.totalTimePauses;
+
+		//console.log('this.durationInSeconds:' + this.durationInSeconds);
 		
 		//this.durationInSeconds = 500;
 		
@@ -137,17 +162,16 @@ class MRPMarquee extends HTMLElement {
 		}
 		
 		this.containter.appendChild(this.lyricsDiv)
-		
+
+		//get teh starting point
 		this.startingPoint = this._calcStartingPont(this.durationInSeconds);
-		
+
+		//setup the timmings for the pauses
+		this._setupTimingForPauses(this.durationInSeconds);
+
 		//this.startingPoint = -194;
-		
 		this.lyricsDiv.style.animationDelay = this.startingPoint.toString() + 's';
-		this.lyricsDiv.style.webkitAnimationDelay = this.startingPoint.toString() + 's';
-		
-		
 		this.lyricsDiv.style.animationDuration = this.durationInSeconds.toString() + 's';
-		this.lyricsDiv.style.webkitAnimationDuration =  this.durationInSeconds.toString() + 's';
 		this.lyricsDiv.style.animationPlayState = 'running';
 		this.isPaused = false;
 		
@@ -160,20 +184,94 @@ class MRPMarquee extends HTMLElement {
 		var extraPercetage = Math.round(extraPixalsThatWontShow / this.lyricsDiv.offsetHeight*100);
 		this.lyricsDiv.style.height = (heightP + extraPercetage)+ '%';
 		
-//		console.log('scrollHeight:' + this.lyricsDiv.scrollHeight);
-//		console.log('heightP:' + (heightP + extraPercetage));
+		//console.log('scrollHeight:' + this.lyricsDiv.scrollHeight);
+		//console.log('heightP:' + (heightP + extraPercetage));
 //		console.log('durationInSeconds:' + this.durationInSeconds);
-//		console.log('startingPoint:' + this.startingPoint);
-		
-	}
-	_dealWithPauses(){
-		debugger;
-		//remove the pauses from the lyrics
+		//console.log('startingPoint:' + this.startingPoint);
 
+		this._setupPausesTimeout();
+	}
+	_setupEarlyEnding(endEarly, duration){
+		if(endEarly===0){
+			return false;
+		}
+
+		Lib.JS.setTimeout(this,this._endEarly,(duration-endEarly) * 1000);
+	}
+	_endEarly(){
+		EventBroker.triggerBoth(this,this.events.endedEarly,this.id + '_mrp-Marquee');
+	}
+	_removeThePausesFromText(){
+		this.pauses = [];
+		this.totalTimePauses = 0;
+
+		var lines = this.text.split('\n')
+		for(var lineCounter = 0;lineCounter<lines.length;lineCounter++){
+			if(lines[lineCounter].includes('{Pause')){
+				var timing = this._getPauseTime(lines[lineCounter]);
+				lines[lineCounter] = timing.line;
+				this.pauses.push({whenToPause:lineCounter,pauseTime:timing.timeToPause + this.totalTimePauses})
+				this.totalTimePauses = this.totalTimePauses + timing.timeToPause;
+			}
+		}
+		return lines.join('\n');
+	}
+	_getPauseTime(line){
+		//temp
+
+		var leftBracketIndex = 0;
+		var rightBracketIndex = 0;
+		var timeToPause = 0;
+
+		//looking for {Pause##}, can have multiple in one line
+		do {
+			leftBracketIndex = line.indexOf('{');
+			rightBracketIndex = line.indexOf('}');
+			timeToPause = timeToPause + parseInt(line.substr(leftBracketIndex+1,rightBracketIndex-1).replace('Pause',''));
+			line = line.substr(0,leftBracketIndex) + line.substr(rightBracketIndex+1);
+		} while (line.includes('{Pause'));
+		//return the total timming to pauses and a clean line
+		return {line,timeToPause};
+	}
+	_setupTimingForPauses(duration){
 		//use the duration to estimated what time the pauses will show up.
 		//Each line should see and equal amount of time on the screen, so duration/numlines *get real lines show* with give you how long each line will take
-		//then simple calcs to determine when to put in the pause
+		var lineHeight = this.lyricsDiv.children[1].offsetHeight;
+
+		//rough estimate
+		var numLines = Math.round(this.lyricsDiv.scrollHeight/lineHeight);
+		var timePerLine = duration/numLines;
+		var timeInSecondsToPause = 0;
+
+		//loop though each pause and setting the pause Object
+		for(var pauseCounter = 0;pauseCounter<this.pauses.length;pauseCounter++){
+			//then simple calcs to determine when to put in the pause
+			timeInSecondsToPause = Math.round(this.pauses[pauseCounter].whenToPause * timePerLine);
+			this.pauses[pauseCounter].whenToPause = timeInSecondsToPause;
+		}
 	}
+	_setupPausesTimeout(){
+		this.pauseCounter = 0;
+
+		//if pauses exists
+		if(this.pauses.length>0){
+			//setup listener to listen after each second.
+
+			for(var pauseCounter = 0;pauseCounter<this.pauses.length;pauseCounter++){
+				Lib.JS.setTimeout(this,this._checkPauseTimeout,this.pauses[pauseCounter].whenToPause * 1000);
+			}
+
+		}else{
+			this.pauses = [];
+			this.pauseObj = {};
+		}
+	}
+	_checkPauseTimeout(){
+		var timeToPause = this.pauses[this.pauseCounter].pauseTime;
+		this.pause();
+		Lib.JS.setTimeout(this,this.unPause,timeToPause * 1000);
+	}
+
 	addText(text){
 		this.text = text;
 		this.lyricsDiv.innerText = this.text;

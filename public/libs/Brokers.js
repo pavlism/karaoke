@@ -134,7 +134,12 @@ if (Lib.JS.isUndefined(EventBroker)) {
                 return this.addListener(events, listenerArgs, callback);
             }
         };
-        
+
+        this.triggerBoth = function (caller, event, eventString) {
+            this._triggerSting(eventString + '_' + event,caller);
+            this._triggerObj(caller,event);
+        };
+
 		this.trigger = function () {
             if(Lib.JS.isString(arguments[0])){
 				this._triggerSting(arguments[0],arguments[1]);

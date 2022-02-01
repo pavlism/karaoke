@@ -22,9 +22,15 @@ if (typeof JSLib === 'undefined') {
 			}
 			return setInterval(tempFunc, interval);
         };
-		
-		
-		
+
+        Lib.JS.setTimeout = function (caller,callback,interval,paramaters) {
+
+            var tempFunc = function(){
+                callback.call(caller, paramaters);
+            }
+            return setTimeout(tempFunc, interval);
+        };
+
 		
 		Lib.JS.isArray = function (array) {
             log.trace("CreateNewArray");

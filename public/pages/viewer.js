@@ -4,7 +4,7 @@ Viewer_template.innerHTML = `
 		Select Playlist <mrp-drop-down id="Viewer_playListSelection"></mrp-drop-down>
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
-		<mrp-marquee style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
+		<mrp-marquee id='lyricsScrolling' style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
 		<div id="songTitleForAddLyrics"></div>
 		<mrp-text-area primary id="lyricsBox"></mrp-text-area>
 		<mrp-button primary id="addLyrics" style="display: block;">Add Lyrics</mrp-button>
@@ -20,17 +20,24 @@ Viewer_template.innerHTML = `
 `
 class ViewerPage extends HTMLElement {
 	//TODO
-	
-	
-	//Lyrics don't often finish - they stop part way through
-	
-	//next button doesn't change the title at the bottom - id=songTitleForAddLyrics
+
+	//lyrics in second song are wrong
+
+	//add an admin mode to edit songs while that are playing (a testing mode)
+		//add slow down and speed up buttons that will change the scroll speed
+		//add in a restart button
+		//add way to end prematurly - like an end button with the speed up and down buttons
+		//add the end early part to the settings - get it working
+
+
+
+
 	//after start button is hit hide it.
-	
+
 	//have the current song removed from the playlist
 	//have the startbutton look for the temp playListBox
 	//grey out start button until temp play list exists
-	
+	//next button doesn't change the title at the bottom - id=songTitleForAddLyrics
 	//once a song is played remove it from the list
 	//if playlist changes then update autp randomize it
 
@@ -47,6 +54,8 @@ class ViewerPage extends HTMLElement {
 	//change the setting to have a speed setting instead of the songe lenght and starting point
 	//add a restart button
 	//remove ability to add lyrics when playing a song
+
+	//maybe add a fade out a few seconds before ending and moving to the next song
 	
 	//ENOENT: no such file or directory, stat 'public/videos/Tiësto .mp4' - somthing wierd happened and it crashed to server
 
@@ -96,6 +105,8 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("songTitleChanged", this, this.setupSongList);
 		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
+
+		EventBroker.listen(this.lyricsObj, this.lyricsObj.events.endedEarly, this, this.nextVideo);
 
 		//this.setupSongList();
 		this.songIndex = 0;

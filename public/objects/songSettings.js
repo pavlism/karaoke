@@ -8,11 +8,11 @@ class SongSettings{
 		//Cehck first line to settings Object
 		//if it does then setup the settings
 		//TODO need the duration for legacy stuff can take out after updated all the lyrics settings
-		if(firstLine.indexOf('{"speed":') ===0 || firstLine.indexOf('{"duration":') ===0){
+		if(firstLine.indexOf('{"speed":') ===0){
 			this.speed = JSON.parse(firstLine).speed || 100;
 			
 			//need to parse the timming
-			this.timming = JSON.parse(firstLine).timming || {};
+			this.timming = JSON.parse(firstLine).timming || {endEarly:0};
 			
 			this.volume = JSON.parse(firstLine).volume || 50;
 			
@@ -24,7 +24,7 @@ class SongSettings{
 		}else{
 			//else if missing add in empty one
 			this.speed = 100;
-			this.timming = '{}';
+			this.timming = {endEarly:0};
 			this.volume = 50;
 			this.lyrics = lyricData;
 		}
@@ -36,17 +36,6 @@ class SongSettings{
 		return this.timming;
 	}
 	getDuration(){
-		//The lyrics need to run ass long as the song is playing, but we the user too see some of the lyrics at the start of the video
-		//The animation speed is based on how long the animation will last, so it needs to last less then the song and start before zero.
-		
-		/*if(this.duration === -1 && Lib.JS.isDefined(this.videoPlayer)){
-			this.duration = this.videoPlayer.duration;
-			var startingPoint = Math.round(this.duration*0.3) * -1;
-			this.duration = this.duration - startingPoint;
-			this.duration = Math.round(this.duration*0.75);
-			this.updateLyrics();
-		}*/
-		
 		return this.videoPlayer.duration;
 	}
 	getStartingPoint(){

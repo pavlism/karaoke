@@ -25,9 +25,9 @@ Playlist_template.innerHTML = `
 			Song Title:<mrp-text-box id='songTitle' size='50'></mrp-text-box>
 			Speed%:<mrp-text-box id='speed' number></mrp-text-box>
 			Volume%:<mrp-text-box id='volume' number></mrp-text-box>
-			<mrp-button primary id="saveSongButton" number>Save</mrp-button>
-			<mrp-button primary id="saveSongCancelButton" number>Cancel</mrp-button>
-			<mrp-button primary id="addPause" number>Add 10 second Pause</mrp-button>
+			<mrp-button primary id="saveSongButton">Save</mrp-button>
+			<mrp-button primary id="saveSongCancelButton">Cancel</mrp-button>
+			<mrp-button primary id="addPause">Add 10 second Pause</mrp-button>
 		</div>
 		<div>
 			Lyrics:<mrp-text-area rows=20 cols=100 id='songLyrics'></mrp-text-area>
@@ -38,14 +38,10 @@ Playlist_template.innerHTML = `
 	</dv>
 `
 class PlaylistPage extends HTMLElement {
-//todo	
+//todo
+	//setup and end early settings and have the video end early
+	//also have the time taken off the duration
 
-	//add ability to pause the song for a specific duration in the lyrics
-	
-	//add ability to test a song and add pauses as you are testing
-
-	//hide temp button
-	//can edit a song when nothign was chosen - grey out the edit button
 
 	constructor() {
 		super();
@@ -64,6 +60,8 @@ class PlaylistPage extends HTMLElement {
 		this.editLyricsButton = this.shadowRoot.querySelector('#editLyricsButton');
 		this.exitButton = this.shadowRoot.querySelector('#exitButton');
 		this.addPause = this.shadowRoot.querySelector('#addPause');
+		this.tempButton = this.shadowRoot.querySelector('#temp2');
+		this.tempButton.hide();
 
 		this.playlistUL = this.shadowRoot.querySelector('mrp-list');
 		this.playlistTitleBox = this.shadowRoot.querySelector('mrp-text-box');
@@ -105,7 +103,7 @@ class PlaylistPage extends HTMLElement {
 		EventBroker.listen("deleteButton_mrp-button_clicked", this, this._askRemovePlaylist);
 		EventBroker.listen("mrp-list_playList_changed", this, this.updateList);
 		EventBroker.listen("editButton_mrp-button_clicked", this, this.editSong);
-		EventBroker.listen(this.editLyricsButton, this.editLyricsButton.events.clicked, this, this._editSondWithoutLyrics);
+		EventBroker.listen(this.editLyricsButton, this.editLyricsButton.events.clicked, this, this._editSongWithoutLyrics);
 		EventBroker.listen("saveSongButton_mrp-button_clicked", this, this.saveSong);
 		EventBroker.listen("saveSongCancelButton_mrp-button_clicked", this, this._hideSongEdit);
 		
@@ -187,7 +185,7 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.enable();
 		this.saveOnlyButton.enable();
 	}
-	_editSondWithoutLyrics(event, songIndex = 0){
+	_editSongWithoutLyrics(event, songIndex = 0){
 		for(var songCounter =songIndex;songCounter<this.songList.length;songCounter++){
 			//chec if song settings exist, if they don't then go get them
 			
@@ -210,12 +208,13 @@ class PlaylistPage extends HTMLElement {
 
 			if(data){
 				component.songSettings[songTitle] = new SongSettings(data);
-				component._editSondWithoutLyrics({},songIndex);
+				component._editSongWithoutLyrics({},songIndex);
 			}
 		}
 	}
-	editSong(songTitle = ''){		
-		if(songTitle ==='' && this.songListDD.getIndex()===-1){
+	editSong(songTitle = ''){
+		debugger;
+		if((songTitle ==='' || this.songListDD.getValue()==='') && this.songListDD.getIndex()===-1 ){
 			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
 			this.errorBox.show();
 			return false;
