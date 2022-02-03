@@ -123,11 +123,6 @@ class MRPMarquee extends HTMLElement {
 	}
 	start(speed = 100,timing = {endEarly:0},durationInSeconds = 100){
 
-		//TODO remove below
-		timing.endEarly = 120;
-
-		debugger;
-
 		//remove the pauses from the lyrics
 		this.text = this._removeThePausesFromText();
 		//console.log('speed:' + speed);

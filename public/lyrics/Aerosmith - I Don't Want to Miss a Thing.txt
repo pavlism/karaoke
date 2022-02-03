@@ -1,3 +1,4 @@
+{"speed":100,"volume":50,"timming":{"endEarly":0}}
 {"duration":286,"startingPoint":-88,"volume":100}
 I could stay awake just to hear you breathing
 Watch you smile while you are sleeping

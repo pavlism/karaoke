@@ -25,6 +25,7 @@ Playlist_template.innerHTML = `
 			Song Title:<mrp-text-box id='songTitle' size='50'></mrp-text-box>
 			Speed%:<mrp-text-box id='speed' number></mrp-text-box>
 			Volume%:<mrp-text-box id='volume' number></mrp-text-box>
+			End Early(s):<mrp-text-box id='earlyEnding' number></mrp-text-box>
 			<mrp-button primary id="saveSongButton">Save</mrp-button>
 			<mrp-button primary id="saveSongCancelButton">Cancel</mrp-button>
 			<mrp-button primary id="addPause">Add 10 second Pause</mrp-button>
@@ -38,14 +39,18 @@ Playlist_template.innerHTML = `
 	</dv>
 `
 class PlaylistPage extends HTMLElement {
-//todo
-	//setup and end early settings and have the video end early
-	//also have the time taken off the duration
+//TODO
+	//TODO save the list at this point as well
 
+
+	//when loaded clear the actions list on the server
+	//lyrics are somtimes getting saved to the wrong song
+
+	//soing bts butter has single questes in it - these need to be removed if found -
 
 	constructor() {
 		super();
-		
+
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Playlist_template.content.cloneNode(true));
 		this.songListDD = this.shadowRoot.querySelector('#songList');
@@ -72,6 +77,7 @@ class PlaylistPage extends HTMLElement {
 		this.songTitle = this.shadowRoot.querySelector('#songTitle');
 		this.speed = this.shadowRoot.querySelector('#speed');
 		this.volume = this.shadowRoot.querySelector('#volume');
+		this.earlyEnding = this.shadowRoot.querySelector('#earlyEnding');
 		this.songLyrics = this.shadowRoot.querySelector('#songLyrics');
 		this.clearButton = this.shadowRoot.querySelector('#clearButton');
 		
@@ -106,8 +112,9 @@ class PlaylistPage extends HTMLElement {
 		EventBroker.listen(this.editLyricsButton, this.editLyricsButton.events.clicked, this, this._editSongWithoutLyrics);
 		EventBroker.listen("saveSongButton_mrp-button_clicked", this, this.saveSong);
 		EventBroker.listen("saveSongCancelButton_mrp-button_clicked", this, this._hideSongEdit);
-		
-		this.setSongList();
+
+		this._getSongLists();
+
 		this.playList = [];
 		this.playlistUL.hide();
 		this.tempView = true;
@@ -122,53 +129,91 @@ class PlaylistPage extends HTMLElement {
 		
 		EventBroker.listen(this.playlistUL, this.playlistUL.events.listChanged, this, this._listChanged);
 	}
-	
-	
-	
+
 	tempFunc(){
 	}
 
-	_addPause(){
-		this.songLyrics.insertTextAtCursor('{Pause10}');
-	}
-
-	_clearCurrentList(){
-		this.playList = [];
-		this.playlistUL.setList(this.playList);
-	}
-	setupViewerForTempPlaylist(){	
+	setupViewerForTempPlaylist(){
 		//hide select playlist
 		this.selectPlaylistDiv.hidden = true;
-		
+
 		//hide name of playlist
 		this.playlistNameSpan.hidden = true;
-		
+
 		//show the playlist
 		this.playlistUL.show();
-		
+
 		//hide the buttons
 		this.saveButton.hide();
 		this.deleteButton.hide();
 		this.editButton.hide();
 		this.editLyricsButton.hide();
-		
+
 		//set viewbool
 		this.tempView = true;
 
 		this.shadowRoot.querySelector('#editSongDiv').id
 		this.shadowRoot.querySelector('#editButton').hid
-		
-		//load up the temp list
-		this._loadPlayList(this.tempPlayListTitle);
-		
+
+		this.playlistTitleBox.setValue(this.tempPlayListTitle);
+		this._loadTempPlayList(true);
+
 		//disable the save buttons as nothing changed
 		this.disableSaves();
+
+		//remove actions list
+		Server.deleteAllActions();
+
+		this.pingInterval = Lib.JS.setInterval(this,this._checkForTempListActions, 3000);
+	}
+	async _loadTempPlayList(isFirstLoad = false){
+		//load up the temp list
+		const data = await Server.getPlayList(this.tempPlayListTitle);
+
+		if(data ===''){
+			this.playList = [];
+			this.playlistUL.setList([]);
+		}else{
+			this.playList = JSON.parse(data);
+			this.playlistUL.setList(JSON.parse(data));
+		}
+	}
+	async _checkForTempListActions(){
+		const data = await Server.getTempListActions(this.tempPlayListTitle);
+		debugger;
+
+		for(var actionCounter = 0;actionCounter<data.length;actionCounter++){
+			if(Lib.JS.isDefined(data[actionCounter].remove)){
+				var titleToRemove = data[actionCounter].remove;
+
+				for(var songCounter = 0;songCounter<this.playList.length;songCounter++){
+					if(this.playList[songCounter] === titleToRemove){
+						this.playList.splice(songCounter,1);
+						this.playlistUL.refresh();
+						break;
+					}
+				}
+
+				//update teh actions List
+				Server.deleteAction('remove',titleToRemove);
+			}
+		}
+
+		//TODO save the list at this point as well
 	}
 	setupViewerForSavedPlaylist(){
 		this.selectPlaylistDiv.hidden = false;
 		this.tempView = false;
 		this.clearButton.hide();
 		this.editButton.show();
+	}
+
+	_addPause(){
+		this.songLyrics.insertTextAtCursor('{Pause10}');
+	}
+	_clearCurrentList(){
+		this.playList = [];
+		this.playlistUL.setList(this.playList);
 	}
 	_listChanged(){
 		if(!this.listLoaded){
@@ -185,12 +230,17 @@ class PlaylistPage extends HTMLElement {
 		this.saveButton.enable();
 		this.saveOnlyButton.enable();
 	}
-	_editSongWithoutLyrics(event, songIndex = 0){
+	async _editSongWithoutLyrics(event, songIndex = 0){
+		var songTitle = '';
+
 		for(var songCounter =songIndex;songCounter<this.songList.length;songCounter++){
-			//chec if song settings exist, if they don't then go get them
+			//check if song settings exist, if they don't then go get them
 			
 			if(Lib.JS.isUndefined(this.songSettings[this.songList[songCounter]])){
-				this._getSongSettingsForList(this.songList[songCounter], songCounter);
+				songTitle = this.songList[songCounter]
+				const data = await Server.getSongLyrics(songTitle);
+				this.songSettings[songTitle] = new SongSettings(data);
+				this._editSongWithoutLyrics({},songIndex);
 				return false;
 			}else if(this.songSettings[this.songList[songCounter]].lyrics ==="Lyrics Missing"){
 				this.editSong(this.songList[songCounter]);
@@ -198,30 +248,13 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 	}
-	_getSongSettingsForList(songTitle, songIndex){
-		var apiCall = 'api/lyrics?name=' + songTitle;
-		getLyrics(this, apiCall,songTitle,songIndex);
-		
-		async function getLyrics(component, apiCall,songTitle,songIndex){
-			const response = await fetch(apiCall);
-			const data = await response.json();
-
-			if(data){
-				component.songSettings[songTitle] = new SongSettings(data);
-				component._editSongWithoutLyrics({},songIndex);
-			}
-		}
-	}
-	editSong(songTitle = ''){
-		debugger;
-		if((songTitle ==='' || this.songListDD.getValue()==='') && this.songListDD.getIndex()===-1 ){
+	async editSong(songTitle = ''){
+		if((songTitle ==='' && this.songListDD.getValue()==='') && this.songListDD.getIndex()===-1 ){
 			this.errorBox.setError('Error','Song title does not exist, please choose from the list');
 			this.errorBox.show();
 			return false;
 		}
-		
-		
-		
+
 		this.hidePlaylist();
 		this.savedMessageDiv.hidden = true;
 		this.songIndex = 0;
@@ -229,32 +262,23 @@ class PlaylistPage extends HTMLElement {
 		if(songTitle ==='' || !Lib.JS.isString(songTitle)){
 			songTitle = this.songListDD.getValue();
 		}
-		
-		var apiCall = 'api/lyrics?name=' + songTitle;
-		
-		
-		
-		getLyrics(this, apiCall,songTitle);
-		
-		async function getLyrics(component, apiCall,songTitle){
-			const response = await fetch(apiCall);
-			const data = await response.json();
 
-			if(data){
-				component.songSettings = new SongSettings(data);
-				component.volume.setValue(component.songSettings.volume);
-				component.speed.setValue(component.songSettings.speed)
-				component.songLyrics.setValue(component.songSettings.lyrics);
-				component.songTitle.setValue(songTitle);
-				component.editSondDiv.hidden = false;
-			}
-		}
+		const data = await Server.getSongLyrics(songTitle)
+
+		this.songSettings = new SongSettings(data);
+		this.volume.setValue(this.songSettings.volume);
+		this.speed.setValue(this.songSettings.speed)
+		this.songLyrics.setValue(this.songSettings.lyrics);
+		this.earlyEnding.setValue(this.songSettings.timming.endEarly);
+		this.songTitle.setValue(songTitle);
+		this.editSondDiv.hidden = false;
 	}
-	saveSong(){
+	async saveSong(){
 		//get the new settings
 		this.songSettings.speed = this.speed.getValue();
 		this.songSettings.volume = this.volume.getValue();
 		this.songSettings.lyrics = this.songLyrics.getValue();
+        this.songSettings.timming.endEarly = parseInt(this.earlyEnding.getValue())
 
 		//Save the new settings in the file
 		this.songSettings.updateLyrics()
@@ -268,10 +292,11 @@ class PlaylistPage extends HTMLElement {
 		this.songListDD.updateCurrentSelection(this.songTitle.getValue());
 		
 		this._hideSongEdit();
-		
-		
-		this.addLyricsToDB(this.songTitle.getValue(), this.songSettings.getLyricsToSave());
-		
+
+		const response = await Server.updateSongLyrics(this.songTitle.getValue(), this.songSettings.getLyricsToSave());
+		if(response.status !==200){
+			this.lyricsdiv.firstElementChild.innerText = "An error happened check the server";
+		}
 	}
 	_hideSongEdit(){
 		//hide the edit info
@@ -285,52 +310,16 @@ class PlaylistPage extends HTMLElement {
 			this._showPlaylist();
 		}
 	}
-	addLyricsToDB(songTitle, lyrics){
-		var lyricInfo = {songTitle,lyrics};
-		
-		addSongLyrics(this, lyricInfo);
-		
-		async function addSongLyrics(component, data){
-			
-			var options = {};
-			options.method = 'POST';
-			options.body=JSON.stringify(data);
-			
-			options.headers={'Content-Type':'application/json'}
-			const response = await fetch('/api/addLyrics',options);
-			
-			if(response.status === 200){
-			}else{
-				component.lyricsdiv.firstElementChild.innerText = "An error happened check the server"
-			}
-		}
-	}
-	updateSongTitle(newTitle, oldTitle){
-		var songInfo = {newTitle,oldTitle};
-		
-		addPlayList(this, songInfo);
-		
-		async function addPlayList(component, data){
-			
-			var options = {};
-			options.method = 'POST';
-			options.body=JSON.stringify(data);
-			
-			options.headers={'Content-Type':'application/json'}
-			const response = await fetch('/api/changeSongTitle',options);
-			
-			if(response.status === 200){
-				var index = component.songListDD.getIndex();
-				component.songList[index] = data.newTitle;
-				component.songListDD.updateCurrentSelection(data.newTitle);
-			}else{
-			}
-		}
-		
+	async updateSongTitle(newTitle, oldTitle){
+		const response = await Server.updateSongTitle(newTitle,oldTitle);
+		var index = this.songListDD.getIndex();
+		this.songList[index] = newTitle;
+		this.songListDD.updateCurrentSelection(newTitle);
+
 		//need to update all the song lists
-		this.udpateAllPlayLists(newTitle, oldTitle);
+		this.updateAllPlayLists(newTitle, oldTitle);
 	}
-	udpateAllPlayLists(newTitle, oldTitle){
+	async updateAllPlayLists(newTitle, oldTitle){
 		this.disableSaves();
 		var listChange = false;
 		this.numListsToUpdate = Object.keys(this.allPlaylists).length;
@@ -351,30 +340,10 @@ class PlaylistPage extends HTMLElement {
 			if(listChange){
 				//if this is the current list then update the viewer
 				EventBroker.trigger("PlaylistUpdate",{title:key, list:this.allPlaylists[key]});
-				
-				//update the list files
-				var listInfo = {title:key,list:JSON.stringify(this.allPlaylists[key])};
-				
-				updatePlayList(this, listInfo);
-				
-				async function updatePlayList(component, data){
-					
-					var options = {};
-					options.method = 'POST';
-					options.body=JSON.stringify(data);
-					
-					options.headers={'Content-Type':'application/json'}
-					const response = await fetch('/api/addPlaylist',options);
-					
-					if(response.status === 200){
-					}else{
-						debugger;
-					}
-
-					component.numUpdated++;
-					if(component.numUpdated == component.numListsToUpdate){
-						component.enableSaves();
-					}
+				const response = await Server.updatePlayList(key,JSON.stringify(this.allPlaylists[key]));
+				this.numUpdated++;
+				if(this.numUpdated == this.numListsToUpdate){
+					this.enableSaves();
 				}
 			}else{
 				this.numUpdated++;
@@ -389,20 +358,9 @@ class PlaylistPage extends HTMLElement {
 	updateList(list){
 		this.playList = list.getValues();
 	}
-	setSongList(){
-		var apiCall = 'api/songList';
-		getSongList(this, apiCall);
-		
-		async function getSongList(component, apiCall){			
-			const response = await fetch(apiCall);
-			const data = await response.json();
-			if(data){
-				component.songList = data;
-				component.addSongsToDropDown();
-			}
-		}
-	}
-	addSongsToDropDown(){
+	async _getSongLists(){
+		const data = await Server.getSongList();
+		this.songList = data;
 		this.songListDD.addList(this.songList);
 	}
 	addSongToList(){
@@ -415,7 +373,8 @@ class PlaylistPage extends HTMLElement {
 		}
 		
 		//need to check the playlist doesn't have the temp name
-		if(this.playlistTitleBox.getValue() === this.tempPlayListTitle){
+		if(!this.tempView && this.playlistTitleBox.getValue() === this.tempPlayListTitle){
+			debugger;
 			this.errorBox.setError('Error','The playlist title cannot be used please use another');
 			this.errorBox.show();
 			return false;
@@ -436,149 +395,88 @@ class PlaylistPage extends HTMLElement {
 	saveButDontExit(){
 		this.addPlaylistToViewer(false);
 	}
-	addPlaylistToViewer(isExit = true){
+	async addPlaylistToViewer(isExit = true){
 		var playListTitle = this.playlistTitleBox.getValue();
 		
 		if(playListTitle ==='' && this.tempView){
 			playListTitle = this.tempPlayListTitle;
 		}
-		
-		var listInfo = {title:playListTitle,list:JSON.stringify(this.playList)};
-		
-		addPlayList(this, listInfo);
-		
-		this.disableSaves();
-		
-		async function addPlayList(component, data){
-			
-			var options = {};
-			options.method = 'POST';
-			options.body=JSON.stringify(data);
-			
-			options.headers={'Content-Type':'application/json'}
-			const response = await fetch('/api/addPlaylist',options);
-			
-			if(response.status === 200){
-				if(isExit){
-					EventBroker.trigger('newPlaylistAdded', data.title);
-				}
-				component.setupSavedPlayLists(data.title);
-			}else{
+
+		const response = await Server.updatePlayList(playListTitle,this.playList);
+		if(response.status ===200){
+			if(isExit){
+				EventBroker.trigger('newPlaylistAdded', playListTitle);
 			}
+			this.setupSavedPlayLists(playListTitle);
 		}
+
+		this.disableSaves();
 	}
 	_askRemovePlaylist(){
 		this.areYouSureBox.show();
 	}
-	removePlayList(){
+	async removePlayList(){
 		var playListTitle = this.playlistTitleBox.getValue();
-		var listInfo = {title:playListTitle,list:JSON.stringify(this.playList)};
-		
-		addPlayList(this, listInfo);
-		
-		async function addPlayList(component, data){
-			
-			var options = {};
-			//options.method = 'POST';
-			options.method = 'DELETE';
-			options.body=JSON.stringify(data);
-			
-			options.headers={'Content-Type':'application/json'}
-			const response = await fetch('/api/playList',options);
-			
-			if(response.status === 200){
-				component.setupSavedPlayLists(data.title);
-				component._clearList();
-			}else{
-			}
+		const response = await Server.deletePlayList(playListTitle, this.playList)
+		if(response.status ===200){
+			this.setupSavedPlayLists(playListTitle);
+			this._clearList();
 		}
 	}
-	setupSavedPlayLists(titelToSelect){
-		var apiCall = 'api/playlists';
-		
-		getPlayListList(this, apiCall,titelToSelect);
-		
-		async function getPlayListList(component, apiCall,titelToSelect){			
-			const response = await fetch(apiCall);
-			const data = await response.json();
-			
-			if(data){
-				component.playListList = data;
-				
-				for(var listCounter=0;listCounter<data.length;listCounter++){
-					if(data[listCounter] === component.tempPlayListTitle){
-						data.splice(listCounter,1);
-					}
-				}
-				
-				data.unshift("New");
-				component.playlistDD.addList(data);
-				component.playlistDD.sortAlphabetically();
-				if(Lib.JS.isDefined(titelToSelect)){
-					component.playlistDD.setValue(titelToSelect)
-				}
-				component.getAllPlayLists(component.playListList);
+	async setupSavedPlayLists(titleToSelect){
+		const data = await Server.getAllPlayLists();
+
+		this.playListList = data;
+
+		for(var listCounter=0;listCounter<data.length;listCounter++){
+			if(data[listCounter] === this.tempPlayListTitle){
+				data.splice(listCounter,1);
 			}
 		}
+
+		data.unshift("New");
+		this.playlistDD.addList(data);
+		this.playlistDD.sortAlphabetically();
+		if(Lib.JS.isDefined(titleToSelect)){
+			this.playlistDD.setValue(titleToSelect)
+		}
+		this.getAllPlayLists(this.playListList);
 	}
-	getAllPlayLists(listOfLists){
+	async getAllPlayLists(listOfLists){
 		this.playListLoadingStats.numToLoad = listOfLists.length;
 		this.playListLoadingStats.numLoaded = 0;
-		
+
 		for(var listCounter = 0;listCounter<listOfLists.length;listCounter++){
-			var apiCall = 'api/playlist?name=' + listOfLists[listCounter];
-			getPlayList(this, apiCall,listOfLists[listCounter]);
-		}
-		
-		async function getPlayList(component, apiCall,playListName){			
-			const response = await fetch(apiCall);
-			const data = await response.json();
-			
-			if(data){
-				component.playListLoadingStats.numLoaded++;
-				if(Lib.JS.isDefined(data) && Lib.JS.isUndefined(data.errno)){
-						component.allPlaylists[playListName] = JSON.parse(data);
-				}
-				
-				if(component.playListLoadingStats.numLoaded == component.playListLoadingStats.numToLoad){
-					component.playListLoadingStats.loaded = true;
-					//commented out because if you save a list - you end up here and the save button will get re-enabled
-					//component.enableSaves();
-				}
-			}else{
+			const data = await Server.getPlayList(listOfLists[listCounter]);
+
+			this.playListLoadingStats.numLoaded++;
+
+			if(Lib.JS.isDefined(data) && Lib.JS.isUndefined(data.errno)){
+				this.allPlaylists[listOfLists[listCounter]] = JSON.parse(data);
+			}
+
+			if(this.playListLoadingStats.numLoaded == this.playListLoadingStats.numToLoad){
+				this.playListLoadingStats.loaded = true;
 			}
 		}
 	}
-	setupPlayList(){
-		this.hideSongEditlist();
+	async setupPlayList() {
+		this.hideSongEditList();
 		this.playlistUL.show();
-		
+
 		var playListName = this.playlistDD.getValue()
 
-		if(playListName==="New"){
+		if (playListName === "New") {
 			//empty list
 			this._clearList();
 			return false;
 		}
-		
-		this._loadPlayList(playListName);
-	}
-	_loadPlayList(playListName){
-		var apiCall = 'api/playlist?name=' + playListName;
-		
-		getPlayList(this, apiCall,playListName);
-		
-		async function getPlayList(component, apiCall,playListName){			
-			const response = await fetch(apiCall);
-			const data = await response.json();
 
-			if(data){
-				component.playList = JSON.parse(data);
-				component.playlistUL.setList(JSON.parse(data));
-				component.playlistTitleBox.setValue(playListName);
-			}else{
-			}
-		}
+		const data = await Server.getPlayList(playListName)
+
+		this.playList = JSON.parse(data);
+		this.playlistUL.setList(JSON.parse(data));
+		this.playlistTitleBox.setValue(playListName);
 	}
 	hidePlaylist(){
 		//this.playList.length = 0;
@@ -587,7 +485,7 @@ class PlaylistPage extends HTMLElement {
 	_showPlaylist(){
 		this.playlistUL.show();
 	}
-	hideSongEditlist(){
+	hideSongEditList(){
 		this.editSondDiv.hidden = true;
 	}
 	_clearList(){

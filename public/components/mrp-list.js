@@ -80,8 +80,7 @@ class MRPList extends HTMLElement {
 
 	_removeFromList(triggerArgs){
 		var index = Number(triggerArgs.element.getAttribute('index'));
-		this.list.splice(index,1);
-		this._fillList();
+		this.removeAt(index)
 	}
 	_moveUp(triggerArgs){
 		var index = Number(triggerArgs.element.getAttribute('index'));
@@ -106,7 +105,14 @@ class MRPList extends HTMLElement {
 		this._fillList();
 	}
 
-	getValues(){	
+	removeAt(index){
+		this.list.splice(index,1);
+		this._fillList();
+	}
+	refresh(){
+		this._fillList();
+	}
+	getValues(){
 		return this.list;
 	}
 	hide(){

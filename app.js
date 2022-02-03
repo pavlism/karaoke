@@ -67,9 +67,49 @@ var logInfo = function(info){
 	  console.log('Saved!');
 	});
 }
+var listActions = [];
+
+app.get('/api/listActions', function(request, response) {
+	response.json(listActions);
+});
+app.post('/api/listAction',(request, response)=>{
+	console.log('post listAction');
+
+	//console.log(request.body.action);
+	//console.log(request.body.title);
+	var tempObj = {};
+
+	tempObj[request.body.action] = request.body.title;
+	listActions.push(tempObj);
+
+	console.log(listActions);
+	response.json('');
+});
+app.delete('/api/listAction',(request, response)=>{
+	console.log('delete listAction');
+
+	console.log(request.body.action);
+	console.log(request.body.title);
+
+	for(let actionCounter = 0;actionCounter<listActions.length;actionCounter++){
+		if(listActions[actionCounter][request.body.action] === request.body.title){
+			listActions.splice(actionCounter,1);
+		}
+	}
+
+	console.log(listActions);
+	response.json('');
+});
+app.delete('/api/allListAction',(request, response)=>{
+	console.log('delete allListAction');
+
+	listActions = [];
+	console.log(listActions);
+	response.json('');
+});
 
 
-app.post('/api/changeSongTitle',(request, response)=>{	
+app.post('/api/changeSongTitle',(request, response)=>{
 	console.log('post addPlaylist');
 	
 	console.log(request.body.newTitle);
@@ -91,6 +131,7 @@ app.post('/api/changeSongTitle',(request, response)=>{
 		response.end();
 	});
 
+	response.json('');
 });
 app.get('/api/video', function(request, response) { 
   const path = 'public/videos/' + request.query.name + '.mp4'
@@ -141,6 +182,8 @@ app.post('/api/addLyrics',(request, response)=>{
 		}
 		response.end();
 	});
+
+	response.json('');
 });
 app.post('/api/addPlaylist',(request, response)=>{	
 	console.log('post addPlaylist');
@@ -157,6 +200,8 @@ app.post('/api/addPlaylist',(request, response)=>{
 		}
 		response.end();
 	});
+
+	response.json('');
 });
 app.delete('/api/playList',(request, response)=>{	
 	console.log('delete playList');
@@ -169,7 +214,7 @@ app.delete('/api/playList',(request, response)=>{
 		}
 			response.json('PlayList Removed');
 	})
-	
+	response.json('');
 });
 app.get('/api/playlists',(request, response)=>{
 	console.log('get playlists');
@@ -259,4 +304,6 @@ app.post('/api/record',(request, response)=>{
 	logInfo(sql);
 
 	runSQL(sql, response);
+
+	response.json('');
 });
