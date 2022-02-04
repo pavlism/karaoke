@@ -222,6 +222,10 @@ class MRPDropDown extends HTMLElement {
 		if(this.selectionIndex !==-1){
 			return this.selectionIndex;
 		}
+
+		if(Lib.JS.isUndefined){
+			return -1;
+		}
 		
 		
 		for(var itemCounter = 0;itemCounter<this.list.length;itemCounter++){

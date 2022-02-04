@@ -5,58 +5,39 @@ Viewer_template.innerHTML = `
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
 		<mrp-marquee id='lyricsScrolling' style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
-		<div id="songTitleForAddLyrics"></div>
+		<div id='nextSongDiv' style="max-height: 800px;overflow: hidden;font-size: x-large;margin-top: 50%;"></div>
 	</div>
 	
 	<video id="videoPlayer" controls style="width: 75%;max-height: 800px;"></video>
+	<video id="countdownPlayer" controls style="width: 75%;max-height: 800px;"></video>
 
 	<mrp-button primary id="startButton">Start</mrp-button>
 	<mrp-button primary id="nextButton">Next</mrp-button>
 	<mrp-button primary id="playlistButton">Playlists</mrp-button>
 	<mrp-button primary id="randomizeButton">Randomize</mrp-button>
+	<mrp-button primary id="pauseButton">Pause</mrp-button>
+	<mrp-button primary id="restartButton">restart</mrp-button>
+	<mrp-button primary id="exitButton">Exit</mrp-button>
 	<mrp-button primary id="temp">temp</mrp-button>
 	
 `
 class ViewerPage extends HTMLElement {
 	//TODO
 
+	//have video loading while countdown is playing
 
-	//have the current song removed from the temp playlist - once completed
-
-
-	//have the startbutton look for the temp playListBox
-	//grey out start button until temp play list exists
-	//next button doesn't change the title at the bottom - id=songTitleForAddLyrics
-	//once a song is played remove it from the list
-	//if playlist changes then update autp randomize it
-
-	//using the next button before lyric scrolling ends messes up the next one
-	//make sure video is fully loaded before playing (validate on laptop)
-	//add in main menu botton
-
-	//play around with screen sizes - did not work well on lap top
-	//add restart song button
-	//add in setting for start time of lyrics
-	//add in pause features
-	//pause should prob be taken from total time
-	//change the setting to have a speed setting instead of the songe lenght and starting point
-	//add a restart button
-	//remove ability to add lyrics when playing a song
-	//show what is next
-
-	//force the video to be a scpecific size
 	//test video on laptop for slow loading videos - don't speak
-
-	//maybe add a fade out a few seconds before ending and moving to the next song
-	
-	//ENOENT: no such file or directory, stat 'public/videos/Tiësto .mp4' - somthing wierd happened and it crashed to server
-
+	//make sure video is fully loaded before playing (validate on laptop)
 
 	//do last, some song settings are using older first line vars, so check them all and update them - //for older values of timming -- //TODO need the duration for legacy stuff can take out after updated all the lyrics settings
 
 
 	//TODO later
+	//play around with screen sizes - did not work well on lap top
 	//setup a better way to test/edit song setttings
+	//add in a randomize button to playlist
+	//setup a second video object for the next song, this way no loading time
+	//maybe add a fade out a few seconds before ending and moving to the next song
 
 	constructor() {
 		super();
@@ -65,35 +46,47 @@ class ViewerPage extends HTMLElement {
 		this.shadowRoot.appendChild(Viewer_template.content.cloneNode(true));
 
 		this.videoPlayer = this.shadowRoot.querySelector('#videoPlayer');
-		this.videoPlayer.addEventListener('ended',this.videoEnded,false);
+		this.countdownPlayer = this.shadowRoot.querySelector('#countdownPlayer');
+		this.videoPlayer.hidden = true;
+
 		this.lyricsdiv = this.shadowRoot.querySelector('#lyrics');
-		this.songTitleForAddLyrics = this.shadowRoot.querySelector('#songTitleForAddLyrics');
 		this.selectPlaylistDiv = this.shadowRoot.querySelector('#selectPlaylistDiv');
 		this.lyricsObj = this.shadowRoot.querySelector('mrp-marquee');
 		this.playListBox = this.shadowRoot.querySelector('mrp-drop-down');
+		this.nextSongDiv = this.shadowRoot.querySelector('#nextSongDiv');
 
 		this.startButton = this.shadowRoot.querySelector('#startButton');
 		this.nextButton = this.shadowRoot.querySelector('#nextButton');
 		this.playlistButton = this.shadowRoot.querySelector('#playlistButton');
 		this.randomizeButton = this.shadowRoot.querySelector('#randomizeButton');
-		this.editSongButton = this.shadowRoot.querySelector('#editSong');
+		this.pauseButton = this.shadowRoot.querySelector('#pauseButton');
+		this.exitButton = this.shadowRoot.querySelector('#exitButton');
+		this.restartButton = this.shadowRoot.querySelector('#restartButton');
 		this.temp = this.shadowRoot.querySelector('#temp');
-		
-		this.setupSavedPlayLists();
-		this.currentSongTitle = '';
-		
-		this.songSettings = SongSettings.createEmpty();
-		this.tempView = true;
-		
+
+
 		//setup videp player events
 		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
 		this.videoPlayer.onpause  = function() {EventBroker.trigger('videoPaused', this)};
 		this.videoPlayer.onplay   = function() {EventBroker.trigger('videoPlayed', this)};
-		
+		this.videoPlayer.addEventListener('ended',function() {EventBroker.trigger('videoEnded', this)},false);
+		this.countdownPlayer.addEventListener('ended',function() {EventBroker.trigger('countDownEnded', this)},false);
+
+		this.countdownPlayer.volume = .2;
+		this.isFirstPlay = true;
+
+		this.setupSavedPlayLists();
+		this.currentSongTitle = '';
+
+		this.pauseButton.disable();
+
+		this.songSettings = SongSettings.createEmpty();
+		this.tempView = true;
+
 		EventBroker.listen("startButton_mrp-button_clicked", this, this.startPlayer);
 		EventBroker.listen("usePlayList", this, this.setSongList);
 		EventBroker.listen("newPlaylistAdded", this, this.setupSavedPlayLists);
-		EventBroker.listen("videoEnded", this, this.nextVideo);
+		EventBroker.listen("videoEnded", this, this.videoEnded);
 		EventBroker.listen(["Viewer_playListSelection_mrp-drop-down_changed"], this, this.setupPlayList);
 		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
 		EventBroker.listen("temp_mrp-button_clicked", this, this.tempFunc);
@@ -104,14 +97,23 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("songTitleChanged", this, this.setupSongList);
 		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
+		EventBroker.listen("countDownEnded", this, this.countDownEnded);
 
 		EventBroker.listen(this.lyricsObj, this.lyricsObj.events.endedEarly, this, this.nextVideo);
 		EventBroker.listen(this.nextButton, this.nextButton.events.clicked, this, this.nextVideo);
+		EventBroker.listen(this.pauseButton, this.pauseButton.events.clicked, this, this._pauseButtonPressed);
+		EventBroker.listen(this.exitButton, this.exitButton.events.clicked, this, this._exit);
+		EventBroker.listen(this.restartButton, this.restartButton.events.clicked, this, this._restartSong);
 
 		//this.setupSongList();
 
 		this.songIndex = 0;
+		this.isPaused = false;
+
 	}
+
+
+
 	tempFunc(){
 		debugger;
 	}
@@ -146,6 +148,21 @@ class ViewerPage extends HTMLElement {
 		this.tempView = false;
 	}
 
+	_restartSong(){
+		//restart the lyrics
+		this.lyricsObj.restart();
+
+		//restart the video
+		this.videoPlayer.currentTime = 0;
+	}
+	_exit(){
+		//turn off the interval
+		if(this.tempView){
+			clearInterval(this.pingInterval);
+		}
+
+		EventBroker.trigger('switchToMainMenu');
+	}
 	async _loadTempPlayList(){
 		const data = await Server.getPlayList(this.tempPlayListTitle);
 		if(data){
@@ -154,12 +171,20 @@ class ViewerPage extends HTMLElement {
 			this.startButton.enable();
 		}
 	}
-
 	videoPaused(){
 		this.lyricsObj.pause();
 	}
 	videoPlayed(){
 		this.lyricsObj.unPause();
+	}
+	_pauseButtonPressed(){
+		if(this.videoPlayer.paused){
+			this.videoPlayer.play();
+			this.pauseButton.textContent = 'Pause'
+		}else{
+			this.videoPlayer.pause();
+			this.pauseButton.textContent = 'Resume'
+		}
 	}
 	startVideo(){
 		this.lyricsObj.addText(this.getCurrentSongTitle() + '\n\n' + this.songSettings.lyrics);
@@ -183,7 +208,7 @@ class ViewerPage extends HTMLElement {
 		this.songList = list;
 		
 		if(loadVideo){
-				this.loadVideo();
+			this.startPlayer();
 		}
 	}
 	async setLyrics(){
@@ -199,17 +224,84 @@ class ViewerPage extends HTMLElement {
 	startPlayer(){
 		this.songIndex = 0;
 		this.currentSongTitle = this.songList[this.songIndex];
-		this.loadVideo();
 		this.startButton.hide();
 		this.nextButton.enable();
+		this.pauseButton.enable();
+		this.isPaused = false;
+
+		this.countdownPlayer.src = "http://localhost:8080/api/video?name=5 Second Countdown";
+		this.countdownPlayer.autoplay = true;
+		this._setupCountdownLyrics();
+		this._disableAllButtons();
+	}
+	_playCountdown(){
+		//setup the video player
+		this.videoPlayer.hidden = true;
+		this.countdownPlayer.hidden = false;
+		this.countdownPlayer.currentTime = 0;
+		this.countdownPlayer.play();
+
+		//change the lyrics to match the next video
+		this._setupCountdownLyrics();
+
+		this._disableAllButtons();
+	}
+	_disableAllButtons(){
+		this.nextButton.disable();
+		this.playlistButton.disable();
+		this.randomizeButton.disable();
+		this.pauseButton.disable();
+		this.restartButton.disable();
+		this.exitButton.disable();
+	}
+	_enableAllButtons(){
+		this.nextButton.enable();
+		this.playlistButton.enable();
+		this.randomizeButton.enable();
+		this.pauseButton.enable();
+		this.restartButton.enable();
+		this.exitButton.enable();
+	}
+	_setupCountdownLyrics(){
+
+		if(this.isFirstPlay){
+			var message = "Next Song: " + this.songList[this.songIndex];
+		}else{
+			var message = "Next Song: " + this.songList[this.songIndex+1];
+		}
+		this.nextSongDiv.textContent = message;
+		this.nextSongDiv.hidden = false;
+		this.lyricsObj.hide();
+
 	}
 	nextVideo(action){
+		//if the countdown is hidden then a real video is playing so now it's time to switch
+		if(this.countdownPlayer.hidden){
+			this._playCountdown();
+			return false;
+		}
+
+		this._enableAllButtons();
+		this.lyricsObj.show();
+		this.nextSongDiv.hidden = true;
+
+		this.videoPlayer.hidden = false;
+		this.countdownPlayer.hidden = true;
+
 		this.songIndex++;
+		if(this.isFirstPlay){
+			this.songIndex--;
+			this.isFirstPlay = false;
+		}
+
 		if(this.songIndex >= this.songList.length){
 			this.songIndex = 0;
 		}
-		//when a song ends it needs add a remove action to the actions on the server
-		Server.addTempListAction('remove',this.currentSongTitle);
+
+		if(this.tempView){
+			//when a song ends it needs add a remove action to the actions on the server
+			Server.addTempListAction('remove',this.currentSongTitle);
+		}
 
 		this.loadVideo();
 		this.currentSongTitle = this.songList[this.songIndex];
@@ -219,7 +311,12 @@ class ViewerPage extends HTMLElement {
 		this.videoPlayer.autoplay = true;
 	}
 	videoEnded(){
-		EventBroker.trigger("videoEnded", this);
+		this.countdownPlayer.hidden = true;
+		this.nextVideo();
+	}
+	countDownEnded(){
+		this.countdownPlayer.hidden = false;
+		this.nextVideo();
 	}
 	async setupSavedPlayLists(listJustAdded){
 		const data = await Server.getAllPlayLists();

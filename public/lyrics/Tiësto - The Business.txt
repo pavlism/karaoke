@@ -1,4 +1,4 @@
-{"duration":187,"startingPoint":-58,"volume":100}
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
 Let's get down, let's get down to business
 Give you one more night, one more night to get this
 We've had a million, million nights just like this

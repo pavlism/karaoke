@@ -66,11 +66,16 @@ class MRPMarquee extends HTMLElement {
 		this.firstPlaythrough = true;
 		this.pauses = [];
 		this.totalTimePauses = 0;
+		this.timeouts = [];
 
 		this.events = {};
 		this.events.endedEarly = 'endedEarly';
 		this.events.paused = 'paused';
 		this.events.unpaused = 'unpaused';
+		this.startParameters = {};
+	}
+	restart(){
+		this.start(this.startParameters.speed,this.startParameters.timing,this.startParameters.durationInSeconds);
 	}
 	pause(){
 		this.lyricsDiv.style.animationPlayState = 'paused'
@@ -122,6 +127,21 @@ class MRPMarquee extends HTMLElement {
 		}
 	}
 	start(speed = 100,timing = {endEarly:0},durationInSeconds = 100){
+		//incase of disaply message option used
+		this.lyricsDiv.style.height = '100%';
+
+		//store the start parameters incase of restart
+		this.startParameters.speed = speed;
+		this.startParameters.timing = timing;
+		this.startParameters.durationInSeconds = durationInSeconds;
+
+		//remove any previous timeouts
+		if(this.timeouts.length>0){
+			debugger;
+			for(let timeOutCounter = 0;timeOutCounter<this.timeouts.length;timeOutCounter++){
+				clearInterval(this.timeouts[timeOutCounter]);
+			}
+		}
 
 		//remove the pauses from the lyrics
 		this.text = this._removeThePausesFromText();
@@ -247,13 +267,14 @@ class MRPMarquee extends HTMLElement {
 	}
 	_setupPausesTimeout(){
 		this.pauseCounter = 0;
+		this.timeouts = [];
 
 		//if pauses exists
 		if(this.pauses.length>0){
 			//setup listener to listen after each second.
 
 			for(var pauseCounter = 0;pauseCounter<this.pauses.length;pauseCounter++){
-				Lib.JS.setTimeout(this,this._checkPauseTimeout,this.pauses[pauseCounter].whenToPause * 1000);
+				this.timeouts.push(Lib.JS.setTimeout(this,this._checkPauseTimeout,this.pauses[pauseCounter].whenToPause * 1000));
 			}
 
 		}else{

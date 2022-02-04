@@ -8,6 +8,8 @@ MRPList_template.innerHTML = `
 
 //TODO
 //the buttons listeners would probabyl not work will if multiple lists existed in the same app
+//setup drag and drop
+//setup a randomize button
 
 
 class MRPList extends HTMLElement {

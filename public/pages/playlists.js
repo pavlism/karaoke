@@ -39,14 +39,9 @@ Playlist_template.innerHTML = `
 	</dv>
 `
 class PlaylistPage extends HTMLElement {
-//TODO
-	//TODO save the list at this point as well
+	//TODO
 
-
-	//when loaded clear the actions list on the server
-	//lyrics are somtimes getting saved to the wrong song
-
-	//soing bts butter has single questes in it - these need to be removed if found -
+	//lyrics are sometimes getting saved to the wrong song
 
 	constructor() {
 		super();
@@ -128,6 +123,7 @@ class PlaylistPage extends HTMLElement {
 		EventBroker.listen("adminButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 		
 		EventBroker.listen(this.playlistUL, this.playlistUL.events.listChanged, this, this._listChanged);
+		EventBroker.listen(this.exitButton, this.exitButton.events.clicked, this, this._exit);
 	}
 
 	tempFunc(){
@@ -180,7 +176,6 @@ class PlaylistPage extends HTMLElement {
 	}
 	async _checkForTempListActions(){
 		const data = await Server.getTempListActions(this.tempPlayListTitle);
-		debugger;
 
 		for(var actionCounter = 0;actionCounter<data.length;actionCounter++){
 			if(Lib.JS.isDefined(data[actionCounter].remove)){
@@ -199,7 +194,7 @@ class PlaylistPage extends HTMLElement {
 			}
 		}
 
-		//TODO save the list at this point as well
+		const response = await Server.updatePlayList(this.tempPlayListTitle,this.playList);
 	}
 	setupViewerForSavedPlaylist(){
 		this.selectPlaylistDiv.hidden = false;
@@ -208,6 +203,12 @@ class PlaylistPage extends HTMLElement {
 		this.editButton.show();
 	}
 
+
+	_exit(){
+		if(this.tempView){
+			clearInterval(this.pingInterval);
+		}
+	}
 	_addPause(){
 		this.songLyrics.insertTextAtCursor('{Pause10}');
 	}

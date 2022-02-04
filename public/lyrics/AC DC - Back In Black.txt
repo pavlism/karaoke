@@ -1,4 +1,4 @@
-{"duration":247,"startingPoint":-76,"volume":100}
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
 Back in black I hit the sack
 I've been too long I'm glad to be back
 Yes I am

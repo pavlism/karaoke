@@ -6,7 +6,6 @@ class Server {
     // const response = await Server.updateSongLyrics();
     // if(response.status !==200){} else {}
 
-
     static async getSongLyrics(songTitle) {
         const response = await fetch('api/lyrics?name=' + songTitle);
         const data = await response.json();
@@ -33,10 +32,7 @@ class Server {
         return data;
     }
 
-
-
-
-    static async updateSongLyrics(songTitle, lyrics, callback,errorCallback, caller, parameters) {
+    static async updateSongLyrics(songTitle, lyrics) {
         var options = {};
         options.method = 'POST';
         options.body=JSON.stringify({songTitle,lyrics});
@@ -45,7 +41,7 @@ class Server {
         const response = await fetch('/api/addLyrics',options);
         return response;
     }
-    static async updateSongTitle(newTitle, oldTitle, callback,errorCallback, caller, parameters) {
+    static async updateSongTitle(newTitle, oldTitle) {
         var options = {};
         options.method = 'POST';
         options.body=JSON.stringify({newTitle,oldTitle});
@@ -66,7 +62,7 @@ class Server {
         const response = await fetch('/api/addPlaylist',options);
         return response;
     }
-    static async addTempListAction(action, title, callback,errorCallback, caller, parameters) {
+    static async addTempListAction(action, title) {
         var options = {};
         console.log("addTempListAction")
         console.log("title:" + title)
@@ -81,8 +77,6 @@ class Server {
         console.log();
         return response;
     }
-
-
 
     static async deletePlayList(title, list) {
         var options = {};

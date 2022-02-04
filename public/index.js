@@ -22,6 +22,7 @@ class IndexPage extends HTMLElement {
 		EventBroker.listen("adminButton_mrp-button_clicked", this, this.showPlaylistScreen);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.showViewerScreen);
 		EventBroker.listen("exitButton_mrp-button_clicked", this, this.showMenu);
+		EventBroker.listen('switchToMainMenu',this, this.showMenu);
 	}
 
 	showMenu(){

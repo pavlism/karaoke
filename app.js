@@ -131,7 +131,6 @@ app.post('/api/changeSongTitle',(request, response)=>{
 		response.end();
 	});
 
-	response.json('');
 });
 app.get('/api/video', function(request, response) { 
   const path = 'public/videos/' + request.query.name + '.mp4'
@@ -182,8 +181,6 @@ app.post('/api/addLyrics',(request, response)=>{
 		}
 		response.end();
 	});
-
-	response.json('');
 });
 app.post('/api/addPlaylist',(request, response)=>{	
 	console.log('post addPlaylist');
@@ -200,8 +197,6 @@ app.post('/api/addPlaylist',(request, response)=>{
 		}
 		response.end();
 	});
-
-	response.json('');
 });
 app.delete('/api/playList',(request, response)=>{	
 	console.log('delete playList');
@@ -214,7 +209,6 @@ app.delete('/api/playList',(request, response)=>{
 		}
 			response.json('PlayList Removed');
 	})
-	response.json('');
 });
 app.get('/api/playlists',(request, response)=>{
 	console.log('get playlists');
