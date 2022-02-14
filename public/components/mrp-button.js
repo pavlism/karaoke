@@ -119,7 +119,6 @@ MRPButton_template.innerHTML = `
 	<button><slot></slot></button>
 `
 
-
 class MRPButton extends HTMLElement {
 	constructor() {
 		super();
