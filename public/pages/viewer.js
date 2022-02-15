@@ -25,7 +25,7 @@ class ViewerPage extends HTMLElement {
 	//TODO
 
 	//have video loading while countdown is playing
-
+    //clicking next needs to pause the video, as it keeps playing while the countdown is active
 	//test video on laptop for slow loading videos - don't speak
 	//make sure video is fully loaded before playing (validate on laptop)
 

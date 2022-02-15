@@ -7,7 +7,7 @@ class Server {
     // if(response.status !==200){} else {}
 
     static async getSongLyrics(songTitle) {
-        const response = await fetch('api/lyrics?name=' + songTitle);
+        const response = await fetch('api/lyrics?name=' + encodeURIComponent(songTitle));
         const data = await response.json();
         return data;
     }

@@ -22,8 +22,11 @@ class MainMenuPage extends HTMLElement {
 		//<source src="http://localhost:8080/api/video" type="video/mp4">
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MainMenu_template.content.cloneNode(true));
-		
 		this.button = this.shadowRoot.querySelector('#videoPlayerButton');
+		EventBroker.listen(this.button, this.button.events.clicked, this, this.temp)
+	}
+	temp(){
+		debugger;
 	}
 }
 

@@ -12,7 +12,7 @@ class SongSettings{
 			this.speed = JSON.parse(firstLine).speed || 100;
 			
 			//need to parse the timming
-			this.timming = JSON.parse(firstLine).timming || {endEarly:0};
+			this.timming = JSON.parse(JSON.parse(firstLine).timming) || {endEarly:0};
 
 			//for older values of timming
 			if(Object.keys(this.timming).length === 0){

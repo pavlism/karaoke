@@ -69,6 +69,53 @@ var logInfo = function(info){
 }
 var listActions = [];
 
+//file updater code ******
+app.get('/api/testConnect',(request, response)=>{
+	console.log('');
+	console.log('/api/testConnect');
+	response.json('Connection Tested');
+	response.end();
+});
+app.post('/api/changeFile',(request, response)=>{
+	console.log('');
+	console.log('/api/changeFile');
+	//console.log(request.body);
+	console.log(request.body.filePath);
+	console.log(request.body.fileContent);
+
+	var path = 'public/' + request.body.filePath;
+	var fileStr = request.body.fileContent;
+
+	fs.readFile(path, (error, data) => {
+		console.log('checking if file exists');
+		if(error) {
+			console.log('error');
+			console.log(error);
+			response.status(500);
+			response.json({error});
+			response.end();
+		}else{
+			console.log('file exists');
+			console.log('attempting to update file');
+			fs.writeFile(path, fileStr, (error) => {
+				if(error) {
+					console.log('error');
+					console.log(error);
+					response.status(500);
+					response.json(error);
+					response.end();
+				}else{
+					console.log('File Updated');
+					response.json('File Updated');
+					response.end();
+				}
+			});
+		}
+	});
+});
+//************************
+
+
 app.get('/api/listActions', function(request, response) {
 	response.json(listActions);
 });
@@ -168,7 +215,7 @@ app.get('/api/video', function(request, response) {
   }
 });
 app.post('/api/addLyrics',(request, response)=>{	
-	console.log('/api/lyrics');
+	console.log('/api/addLyrics');
 	
 	console.log(request.body.songTitle);
 	console.log(request.body.lyrics);
@@ -255,9 +302,13 @@ app.get('/api/lyrics',(request, response)=>{
 	console.log('/api/lyrics');
 	
 	const path = 'public/lyrics/' + request.query.name + '.txt'
-	
+
+	console.log('path:' + path);
+
 	fs.readFile(path, (error, data) => {
 		if(error) {
+			console.log("error");
+			console.log(error);
 			response.json('Lyrics Missing');
 		}else{
 			response.json(data.toString());

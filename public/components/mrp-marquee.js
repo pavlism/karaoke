@@ -206,7 +206,7 @@ class MRPMarquee extends HTMLElement {
 
 		this._setupPausesTimeout();
 	}
-	_setupEarlyEnding(endEarly, duration){
+	_setupEarlyEnding(endEarly = 0, duration){
 		if(endEarly===0){
 			return false;
 		}

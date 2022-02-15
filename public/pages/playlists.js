@@ -256,6 +256,8 @@ class PlaylistPage extends HTMLElement {
 			return false;
 		}
 
+		this.songListDD.setValue(songTitle);
+
 		this.hidePlaylist();
 		this.savedMessageDiv.hidden = true;
 		this.songIndex = 0;
@@ -279,7 +281,7 @@ class PlaylistPage extends HTMLElement {
 		this.songSettings.speed = this.speed.getValue();
 		this.songSettings.volume = this.volume.getValue();
 		this.songSettings.lyrics = this.songLyrics.getValue();
-        this.songSettings.timming.endEarly = parseInt(this.earlyEnding.getValue())
+        this.songSettings.timming.endEarly = parseInt(this.earlyEnding.getValue()) ||0;
 
 		//Save the new settings in the file
 		this.songSettings.updateLyrics()
