@@ -123,8 +123,14 @@ class MRPDropDown extends HTMLElement {
 		}
 	}
 	addList(list){
-		this.list = list;
-		this._fillDropDown();
+		if(Lib.JS.isUndefined(this.list)){
+			this.list = list;
+			this._fillDropDown();
+		}else{
+			this.list = list;
+			this._replaceList();
+		}
+
 	}
 	_replaceList() {
 		if(this.searchable){

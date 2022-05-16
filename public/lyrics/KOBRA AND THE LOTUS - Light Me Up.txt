@@ -1,4 +1,5 @@
-{"duration":259,"startingPoint":-80,"volume":100}
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
+{Pause10}
 Watching you sitting there alone again
 The pain is eating you alive
 You're suffering
@@ -29,7 +30,7 @@ Don't let go
 I'll find you in the darkness
 Never leave you
 Light up for me
-
+{Pause10}
 I know the weight of the pain you feel
 I'll share your burden, I'll help you heal
 

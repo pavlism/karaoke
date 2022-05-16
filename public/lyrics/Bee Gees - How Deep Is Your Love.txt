@@ -1,5 +1,5 @@
-{"duration":234,"startingPoint":-72,"volume":100}
-I know your eyes in the morning sun
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
+{Pause20}I know your eyes in the morning sun
 I feel you touch me in the pouring rain
 And the moment that you wander far from me
 I wanna feel you in my arms again

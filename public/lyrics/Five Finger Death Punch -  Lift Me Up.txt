@@ -1,5 +1,5 @@
-{"duration":239,"startingPoint":-74,"volume":100}
-It ain't no mystery
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
+{Pause30}It ain't no mystery
 I'm all I have left
 I'm pushing back and running you over
 

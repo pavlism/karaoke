@@ -1,3 +1,4 @@
+{"speed":100,"volume":"75","timming":{"endEarly":0}}
 Took a ride to the end of the line where no one ever goes
 Ended up on a broken train with nobody I know
 But the pain and the longing's the same when you're dying

@@ -1,4 +1,5 @@
-There goes the siren that warns of the air raid
+{"speed":100,"volume":50,"timming":{"endEarly":0}}
+{Pause60}There goes the siren that warns of the air raid
 There comes the sound of the guns sending flak
 Out for the scramble we've got to get airborne
 Got to get up for the coming attack

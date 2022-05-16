@@ -10,9 +10,12 @@ class SongSettings{
 		//TODO need the duration for legacy stuff can take out after updated all the lyrics settings
 		if(firstLine.indexOf('{"speed":') ===0 || firstLine.indexOf('{"duration":') ===0){
 			this.speed = JSON.parse(firstLine).speed || 100;
-			
+
 			//need to parse the timming
-			this.timming = JSON.parse(JSON.parse(firstLine).timming) || {endEarly:0};
+			this.timming = {endEarly:0};
+			if(Lib.JS.isDefined(JSON.parse(firstLine).timming)){
+				this.timming = JSON.parse(firstLine).timming;	
+			}
 
 			//for older values of timming
 			if(Object.keys(this.timming).length === 0){

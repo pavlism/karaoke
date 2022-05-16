@@ -2,6 +2,7 @@ const Viewer_template = document.createElement('template');
 Viewer_template.innerHTML = `
 	<div id="selectPlaylistDiv">
 		Select Playlist <mrp-drop-down id="Viewer_playListSelection"></mrp-drop-down>
+		<span id="songListSpan">Songs:<mrp-drop-down width='500px' searchable id='songListBox'></mrp-drop-down></span>
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
 		<mrp-marquee id='lyricsScrolling' style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
@@ -50,6 +51,8 @@ class ViewerPage extends HTMLElement {
 		this.videoPlayer.hidden = true;
 
 		this.lyricsdiv = this.shadowRoot.querySelector('#lyrics');
+		this.songListSpan = this.shadowRoot.querySelector('#songListSpan');
+		this.songListBox = this.shadowRoot.querySelector('#songListBox');
 		this.selectPlaylistDiv = this.shadowRoot.querySelector('#selectPlaylistDiv');
 		this.lyricsObj = this.shadowRoot.querySelector('mrp-marquee');
 		this.playListBox = this.shadowRoot.querySelector('mrp-drop-down');
@@ -104,15 +107,14 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen(this.pauseButton, this.pauseButton.events.clicked, this, this._pauseButtonPressed);
 		EventBroker.listen(this.exitButton, this.exitButton.events.clicked, this, this._exit);
 		EventBroker.listen(this.restartButton, this.restartButton.events.clicked, this, this._restartSong);
+		EventBroker.listen(this.songListBox, this.songListBox.events.changed, this, this._changeSong);
 
-		//this.setupSongList();
+		this.setupSongList();
 
 		this.songIndex = 0;
 		this.isPaused = false;
 
 	}
-
-
 
 	tempFunc(){
 		debugger;
@@ -133,6 +135,9 @@ class ViewerPage extends HTMLElement {
 		//hide the randomize button
 		this.randomizeButton.hide();
 
+		this.songListSpan.hidden = true;
+		this.songListBox.hide();
+
 		//hide the temp button
 		this.temp.hide();
 
@@ -146,8 +151,23 @@ class ViewerPage extends HTMLElement {
 	setupViewerForSavedPlaylist(){
 		this.selectPlaylistDiv.hidden = false;
 		this.tempView = false;
+
+		this.songListSpan.hidden = false;
+		this.songListBox.show();
+		this.playlistButton.show();
+
+		//hide the randomize button
+		this.randomizeButton.show();
 	}
 
+	_changeSong(event){
+		var songTitle = event.target.getValue();
+		var songIndex = this.songList.indexOf(songTitle);
+
+		//set the current song to the one before this one and then go to the next song
+		this.songIndex = this.songList.indexOf(songTitle)-1;
+		this.nextVideo();
+	}
 	_restartSong(){
 		//restart the lyrics
 		this.lyricsObj.restart();
@@ -206,7 +226,8 @@ class ViewerPage extends HTMLElement {
 	}
 	setSongList(list, loadVideo = true){
 		this.songList = list;
-		
+		this.songListBox.addList(list);
+
 		if(loadVideo){
 			this.startPlayer();
 		}
@@ -333,7 +354,6 @@ class ViewerPage extends HTMLElement {
 		}
 	}
 	async setupPlayList(playListName){
-		
 		//if a playslit wasn't sent in then grab it from the text box
 		if(Lib.JS.isUndefined(playListName) || !Lib.JS.isString(playListName)){
 			playListName = this.playListBox.getValue();
@@ -353,7 +373,7 @@ class ViewerPage extends HTMLElement {
 	}
 	randomizeSongList(){
 
-		for(var randomCounter = 0;randomCounter<100;randomCounter++){
+		for(var randomCounter = 0;randomCounter<1000;randomCounter++){
 			var R1 = Lib.JS.getRandomInt(0,this.songList.length-1);
 			var R2 = Lib.JS.getRandomInt(0,this.songList.length-1);
 			var temp = this.songList[R1];
@@ -367,6 +387,7 @@ class ViewerPage extends HTMLElement {
 		//if the current list is updated
 		if(this.playListBox.getValue() == playlistInfo.title){
 			this.songList = playlistInfo.list;
+			this.songListBox.addList(list);
 		}
 	}
 }
