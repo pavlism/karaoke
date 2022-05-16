@@ -1,5 +1,11 @@
 'use strict';
 
+/*TODO
+	-make it work
+	-send a ressponse with errors
+	-turn into an npm package
+ */
+
 // [START gae_node_request_example]
 require('dotenv').config()
 const express = require('express');
@@ -12,8 +18,6 @@ app.use(express.static(__dirname + '/public')); //__dir and not _dir
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json({limit:'1mb'}));
-
-
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -30,9 +34,25 @@ app.listen(PORT, () => {
 
 module.exports = app;
 
+//File Updater Code
 var fs = require('fs');
+app.get('/api/testConnect',(request, response)=>{
+	console.log('');
+	console.log('/api/testConnect');
+	response.json('Connection Tested');
+	response.end();
+});
+app.post('/api/changeFile',(request, response)=>{
+	console.log('');
+	console.log('/api/changeFile');
+	//console.log(request.body);
+	console.log(request.body.filePath);
+	console.log(request.body.fileContent);
 
+	var path = 'public/' + request.body.filePath;
+	var fileStr = request.body.fileContent;
 
+<<<<<<< HEAD
 var runSQL = function(sql, response){
 	console.log(sql);
 	logInfo(sql);
@@ -305,50 +325,38 @@ app.get('/api/lyrics',(request, response)=>{
 
 	console.log('path:' + path);
 
+=======
+>>>>>>> c6f8ffbb54636a62ffbcc590af4717105af2db98
 	fs.readFile(path, (error, data) => {
+		console.log('checking if file exists');
 		if(error) {
+<<<<<<< HEAD
 			console.log("error");
 			console.log(error);
 			response.json('Lyrics Missing');
+=======
+			console.log('error');
+			console.log(error);
+			response.status(500);
+			response.json({error});
+			response.end();
+>>>>>>> c6f8ffbb54636a62ffbcc590af4717105af2db98
 		}else{
-			response.json(data.toString());
+			console.log('file exists');
+			console.log('attempting to update file');
+			fs.writeFile(path, fileStr, (error) => {
+				if(error) {
+					console.log('error');
+					console.log(error);
+					response.status(500);
+					response.json(error);
+					response.end();
+				}else{
+					console.log('File Updated');
+					response.json('File Updated');
+					response.end();
+				}
+			});
 		}
 	});
-});
-app.get('/api/login',(request, response)=>{
-	console.log('login');
-	console.log(request.query.username);
-	console.log(request.query.password);
-	var sql = '';
-	
-	if (request.query.username === 'Small Parcel Team' && request.query.password === 'Revenue') {
-        response.json(true);
-    }else{
-		response.json(false);
-	}
-});
-app.get('/api/test',(request, response)=>{
-	console.log('login');
-	console.log(request.query.youtubecode);
-	
-	var sql = 'call getLyrics("'+request.query.youtubecode+ '")'
-	logInfo(sql);
-
-	runSQL(sql, response);
-});
-app.post('/api/record',(request, response)=>{	
-
-	//console.log(request.body);
-	
-	var sql = 'call add_myEZY("'+request.body["Status Code"]+'","'+request.body["Carrier Name"]+'","'+request.body["Freight Bill (PRO) Document"]+'","'+request.body["Consignee Name"];
-	sql = sql + '","'+request.body["Consignee Address Line3"]+'","'+request.body["Claim Number"]+'","'+request.body["Claim Amount"]+'","'+request.body["Date Filed"];
-	sql = sql + '","'+request.body["Date Mailed"]+'","'+request.body["Company Name"]+'","'+request.body["Shipper Name"]+'","'+request.body["Consignee Name1"];
-	sql = sql + '","'+request.body["Reason Code"]+'","'+request.body["Date Requested"]+'","'+request.body["Shipment Date"]+'","'+request.body["Date Paid (Last)"];
-	sql = sql + '","'+request.body["Date Closed"]+'","'+request.body["Date Filed1"]+'","'+request.body["Date Mailed1"]+'","'+request.body["Date Requested1"];
-	sql = sql + '")'
-	logInfo(sql);
-
-	runSQL(sql, response);
-
-	response.json('');
 });

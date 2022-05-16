@@ -6,6 +6,23 @@ class Server {
     // const response = await Server.updateSongLyrics();
     // if(response.status !==200){} else {}
 
+    static async updateFile() {
+        var options = {};
+        options.method = 'POST';
+        options.body=JSON.stringify({});
+
+        options.headers={'Content-Type':'application/json'}
+        const response = await fetch('/api/changeFile',options);
+        return response;
+    }
+
+
+
+
+
+    //Old stuff below this just for now
+
+
     static async getSongLyrics(songTitle) {
         const response = await fetch('api/lyrics?name=' + encodeURIComponent(songTitle));
         const data = await response.json();
