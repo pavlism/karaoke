@@ -1,4 +1,4 @@
-{"speed":100,"volume":100,"timming":{"endEarly":60}}
+{"duration":256,"startingPoint":-79,"volume":100}
 Jolene, Jolene, Jolene, Jolene
 I'm begging of you please don't take my man
 Jolene, Jolene, Jolene, Jolene

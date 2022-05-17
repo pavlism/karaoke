@@ -1,4 +1,4 @@
-{"speed":100,"volume":100,"timming":{"endEarly":0}}
+{"speed":100,"volume":100,"timming":{}}
 {Pause40}One by one, brought to the sacrifice
 With steel I will take every life
 Shadows and dust, on a crimson sand
@@ -32,11 +32,6 @@ I rule the crowd, I own this world
 Vengeance is mine
 
 My name is Maximus Decimus Meridius, commander of the armies of the North, General of the Felix Legions, loyal servant to the true emperor, Marcus Aurelius. Father to a murdered son, husband to a murdered wife. And I will have my vengeance, in this life or the next.
-
-I am gladiator
-I am gladiator
-I am gladiator – king of the burning sand
-I am gladiator – are you entertained?
 
 I am gladiator
 I am gladiator

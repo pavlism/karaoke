@@ -1,5 +1,4 @@
-{"speed":100,"volume":50,"timming":{"endEarly":0}}
-{Pause30}[Elton John:]
+[Elton John:]
 It's a human sign
 When things go wrong
 When the scent of her lingers

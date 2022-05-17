@@ -1,5 +1,5 @@
-{"speed":100,"volume":100,"timming":{"endEarly":0}}
-{Pause30}I didn't hear what you were saying.
+{"duration":225,"startingPoint":-69,"volume":100}
+I didn't hear what you were saying.
 I live on raw emotion, baby
 I answer questions never maybe
 And I'm not kind if you betray me.
