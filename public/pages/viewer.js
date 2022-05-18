@@ -373,7 +373,8 @@ class ViewerPage extends HTMLElement {
 	}
 	randomizeSongList(){
 
-		for(var randomCounter = 0;randomCounter<1000;randomCounter++){
+
+		for(var randomCounter = 0;randomCounter<10000;randomCounter++){
 			var R1 = Lib.JS.getRandomInt(0,this.songList.length-1);
 			var R2 = Lib.JS.getRandomInt(0,this.songList.length-1);
 			var temp = this.songList[R1];

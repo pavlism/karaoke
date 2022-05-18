@@ -277,7 +277,6 @@ class PlaylistPage extends HTMLElement {
 		this.editSondDiv.hidden = false;
 	}
 	async saveSong(){
-		debugger;
 		//get the new settings
 		this.songSettings.speed = this.speed.getValue();
 		this.songSettings.volume = this.volume.getValue();
