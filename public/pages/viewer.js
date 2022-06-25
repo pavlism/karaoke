@@ -72,6 +72,7 @@ class ViewerPage extends HTMLElement {
 		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
 		this.videoPlayer.onpause  = function() {EventBroker.trigger('videoPaused', this)};
 		this.videoPlayer.onplay   = function() {EventBroker.trigger('videoPlayed', this)};
+		this.videoPlayer.onvolumechange   = function() {EventBroker.trigger('VolumeChanged', this)};
 		this.videoPlayer.addEventListener('ended',function() {EventBroker.trigger('videoEnded', this)},false);
 		this.countdownPlayer.addEventListener('ended',function() {EventBroker.trigger('countDownEnded', this)},false);
 
@@ -101,6 +102,7 @@ class ViewerPage extends HTMLElement {
 		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
 		EventBroker.listen("countDownEnded", this, this.countDownEnded);
+		EventBroker.listen("VolumeChanged", this, this._volumeChanged);
 
 		EventBroker.listen(this.lyricsObj, this.lyricsObj.events.endedEarly, this, this.nextVideo);
 		EventBroker.listen(this.nextButton, this.nextButton.events.clicked, this, this.nextVideo);
@@ -160,6 +162,15 @@ class ViewerPage extends HTMLElement {
 		this.randomizeButton.show();
 	}
 
+	_volumeChanged(videoObject){
+		//need to update setting for the song
+
+		//see if the volume changed
+		if(this.songSettings.volume !== videoObject.volume * 100){
+			this.songSettings.volume = videoObject.volume * 100;
+			Server.updateSongLyrics(this.songSettings.songTitle, this.songSettings.getLyricsToSave());
+		}
+	}
 	_changeSong(event){
 		var songTitle = event.target.getValue();
 		var songIndex = this.songList.indexOf(songTitle);
@@ -209,8 +220,8 @@ class ViewerPage extends HTMLElement {
 	startVideo(){
 		this.lyricsObj.addText(this.getCurrentSongTitle() + '\n\n' + this.songSettings.lyrics);
 		this.lyricsObj.start(this.songSettings.getSpeed(),this.songSettings.getTimming(),this.songSettings.getDuration());
-		
-		//set voloume
+
+		//set volume
 		this.videoPlayer.volume = this.songSettings.volume/100; 
 	}
 	temp(){
@@ -235,7 +246,7 @@ class ViewerPage extends HTMLElement {
 	async setLyrics(){
 		const data = await Server.getSongLyrics(this.songList[this.songIndex])
 		if(data){
-			this.songSettings = new SongSettings(data, this.videoPlayer);
+			this.songSettings = new SongSettings(data,this.songList[this.songIndex], this.videoPlayer);
 			//Get the settings from the first line of the data
 			this.startVideo();
 		}else{

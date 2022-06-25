@@ -1,6 +1,7 @@
 class SongSettings{
-	constructor(lyricData, videoPlayer){
+	constructor(lyricData, songTitle, videoPlayer){
 		this.videoPlayer = videoPlayer;
+		this.songTitle = songTitle;
 
 		var firstLine = lyricData.split('\n')[0]
 		this.saveLyrics = '';
@@ -9,7 +10,17 @@ class SongSettings{
 		//if it does then setup the settings
 		//TODO need the duration for legacy stuff can take out after updated all the lyrics settings
 		if(firstLine.indexOf('{"speed":') ===0 || firstLine.indexOf('{"duration":') ===0){
-			this.speed = JSON.parse(firstLine).speed || 100;
+			this.speed =  JSON.parse(firstLine).speed;
+
+			if(Lib.JS.isUndefined(this.speed)){
+				this.speed =  100;
+			}
+
+			this.volume =  JSON.parse(firstLine).volume;
+
+			if(Lib.JS.isUndefined(this.volume)){
+				this.volume =  50;
+			}
 
 			//need to parse the timming
 			this.timming = {endEarly:0};
@@ -21,9 +32,6 @@ class SongSettings{
 			if(Object.keys(this.timming).length === 0){
 				this.timming = {endEarly:0};
 			}
-
-
-			this.volume = JSON.parse(firstLine).volume || 50;
 			
 			//setup lyrics
 			var lines = lyricData.split('\n');
@@ -57,6 +65,9 @@ class SongSettings{
 		return this.startingPoint;
 	}
 	getLyricsToSave(){
+		if(this.saveLyrics===""){
+			this.updateLyrics();
+		}
 		return this.saveLyrics;
 	}
 	updateLyrics(){

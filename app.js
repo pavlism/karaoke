@@ -184,7 +184,7 @@ app.post('/api/addLyrics',(request, response)=>{
 		response.end();
 	});
 
-	response.json('');
+	//response.json('');
 });
 app.post('/api/addPlaylist',(request, response)=>{
 	console.log('post addPlaylist');

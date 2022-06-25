@@ -240,7 +240,7 @@ class PlaylistPage extends HTMLElement {
 			if(Lib.JS.isUndefined(this.songSettings[this.songList[songCounter]])){
 				songTitle = this.songList[songCounter]
 				const data = await Server.getSongLyrics(songTitle);
-				this.songSettings[songTitle] = new SongSettings(data);
+				this.songSettings[songTitle] = new SongSettings(data, songTitle);
 				this._editSongWithoutLyrics({},songIndex);
 				return false;
 			}else if(this.songSettings[this.songList[songCounter]].lyrics ==="Lyrics Missing"){
@@ -268,7 +268,7 @@ class PlaylistPage extends HTMLElement {
 
 		const data = await Server.getSongLyrics(songTitle)
 
-		this.songSettings = new SongSettings(data);
+		this.songSettings = new SongSettings(data, songTitle);
 		this.volume.setValue(this.songSettings.volume);
 		this.speed.setValue(this.songSettings.speed)
 		this.songLyrics.setValue(this.songSettings.lyrics);
