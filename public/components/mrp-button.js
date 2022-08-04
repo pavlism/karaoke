@@ -211,6 +211,9 @@ class MRPButton extends HTMLElement {
 		this.button.classList.remove('disabled');
 		EventBroker.trigger(this,this.events.enabled);
 	}
+	changeText(newText){
+		this.button.innerHTML = newText;
+	}
 }
 
 window.customElements.define('mrp-button', MRPButton)

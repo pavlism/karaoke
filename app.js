@@ -58,7 +58,6 @@ var runSQL = function(sql, response){
 		response.json(error);
 	}
 }
-
 var logInfo = function(info){
 	return false;
 	var date = new Date();
@@ -168,6 +167,25 @@ app.get('/api/video', function(request, response) {
 		fs.createReadStream(path).pipe(response)
 	}
 });
+app.post('/api/newSong',(request, response)=>{
+	console.log('');
+	console.log('/api/newSong');
+
+	console.log(request.body.path);
+	var dest = "public/videos/"
+
+	console.log(dest);
+
+	fs.copyFile(request.body.path,dest,fs.constants.COPYFILE_EXCL, (error) => {
+		if(error) {
+			response.json(error);
+		}else{
+			response.json('File Moved');
+		}
+		response.end();
+	});
+});
+
 app.post('/api/addLyrics',(request, response)=>{
 	console.log('');
 	console.log('/api/addLyrics');

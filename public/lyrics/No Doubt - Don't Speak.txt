@@ -1,4 +1,4 @@
-{"speed":100,"volume":100}
+{"speed":100,"volume":97.5,"timming":{"endEarly":0}}
 You and me
 We used to be together
 Everyday together

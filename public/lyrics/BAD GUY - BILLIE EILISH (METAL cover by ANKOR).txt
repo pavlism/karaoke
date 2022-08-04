@@ -1,4 +1,4 @@
-{"duration":189,"startingPoint":-58,"volume":100}
+{"speed":100,"volume":72.5,"timming":{"endEarly":0}}
 White shirt now red, my bloody nose
 Sleeping, you're on your tippy toes
 Creeping around like no one knows

@@ -1,4 +1,4 @@
-{"speed":100,"volume":100,"timming":{}}
+{"speed":100,"volume":72.5,"timming":{"endEarly":0}}
 {Pause40}One by one, brought to the sacrifice
 With steel I will take every life
 Shadows and dust, on a crimson sand

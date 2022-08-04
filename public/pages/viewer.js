@@ -1,10 +1,14 @@
 const Viewer_template = document.createElement('template');
 Viewer_template.innerHTML = `
 	<div id="selectPlaylistDiv">
-		Select Playlist <mrp-drop-down id="Viewer_playListSelection"></mrp-drop-down>
+		Select Playlist <mrp-drop-down id="playListSelection"></mrp-drop-down>
 		<span id="songListSpan">Songs:<mrp-drop-down width='500px' searchable id='songListBox'></mrp-drop-down></span>
 	</div>
 	<div id='lyrics' style="width: 25%;float: left;">
+		<div id='songTitle' style="width: 25%;float: left;">
+			Song Title:<mrp-text-box id='songTitleBox' size='50'></mrp-text-box>
+			Lyrics:<mrp-text-area rows=20 cols=50 id='songLyrics'></mrp-text-area>
+		</div>
 		<mrp-marquee id='lyricsScrolling' style="max-height: 800px;overflow: hidden;font-size: x-large;"></mrp-marquee>
 		<div id='nextSongDiv' style="max-height: 800px;overflow: hidden;font-size: x-large;margin-top: 50%;"></div>
 	</div>
@@ -13,17 +17,26 @@ Viewer_template.innerHTML = `
 	<video id="countdownPlayer" controls style="width: 75%;max-height: 800px;"></video>
 
 	<mrp-button primary id="startButton">Start</mrp-button>
+	<mrp-button primary id="startNewSongButton">Start</mrp-button>
+	<mrp-button primary id="unpauseLyricsButton">Unpause Lyrics</mrp-button>
+	<mrp-button primary id="pauseLyricsButton">Pause Lyrics</mrp-button>
 	<mrp-button primary id="nextButton">Next</mrp-button>
 	<mrp-button primary id="playlistButton">Playlists</mrp-button>
 	<mrp-button primary id="randomizeButton">Randomize</mrp-button>
 	<mrp-button primary id="pauseButton">Pause</mrp-button>
+	<mrp-button primary id="endEarly">End Early</mrp-button>
 	<mrp-button primary id="restartButton">restart</mrp-button>
 	<mrp-button primary id="exitButton">Exit</mrp-button>
+	<mrp-button primary id="exitNoSaveButton">Exit with Saving</mrp-button>
+	
 	<mrp-button primary id="temp">temp</mrp-button>
 	
 `
 class ViewerPage extends HTMLElement {
 	//TODO
+
+	//update to extend from VideoPlayerPage - then fix stuff up
+
 
 	//have video loading while countdown is playing
     //clicking next needs to pause the video, as it keeps playing while the countdown is active
@@ -45,7 +58,6 @@ class ViewerPage extends HTMLElement {
 
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(Viewer_template.content.cloneNode(true));
-
 		this.videoPlayer = this.shadowRoot.querySelector('#videoPlayer');
 		this.countdownPlayer = this.shadowRoot.querySelector('#countdownPlayer');
 		this.videoPlayer.hidden = true;
@@ -66,7 +78,21 @@ class ViewerPage extends HTMLElement {
 		this.exitButton = this.shadowRoot.querySelector('#exitButton');
 		this.restartButton = this.shadowRoot.querySelector('#restartButton');
 		this.temp = this.shadowRoot.querySelector('#temp');
+		this.songTitleDiv = this.shadowRoot.querySelector('#songTitle');
+		this.songTitleBox = this.shadowRoot.querySelector('#songTitleBox');
+		this.songLyricsBox = this.shadowRoot.querySelector('#songLyrics');
+		this.startNewSongButton = this.shadowRoot.querySelector('#startNewSongButton');
+		this.pauseLyricsButton = this.shadowRoot.querySelector('#pauseLyricsButton');
+		this.unpauseLyricsButton = this.shadowRoot.querySelector('#unpauseLyricsButton');
+		this.playlistSection = this.shadowRoot.querySelector('#playListSelection');
+		this.exitNoSaveButton = this.shadowRoot.querySelector('#exitNoSaveButton');
+		this.endEarlyButton = this.shadowRoot.querySelector('#endEarly');
 
+		this.startNewSongButton.hide();
+		this.pauseLyricsButton.hide();
+		this.unpauseLyricsButton.hide();
+		this.exitNoSaveButton.hide();
+		this.endEarlyButton.hide();
 
 		//setup videp player events
 		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
@@ -87,29 +113,28 @@ class ViewerPage extends HTMLElement {
 		this.songSettings = SongSettings.createEmpty();
 		this.tempView = true;
 
-		EventBroker.listen("startButton_mrp-button_clicked", this, this.startPlayer);
-		EventBroker.listen("usePlayList", this, this.setSongList);
-		EventBroker.listen("newPlaylistAdded", this, this.setupSavedPlayLists);
-		EventBroker.listen("videoEnded", this, this.videoEnded);
-		EventBroker.listen(["Viewer_playListSelection_mrp-drop-down_changed"], this, this.setupPlayList);
-		EventBroker.listen("randomizeButton_mrp-button_clicked", this, this.randomizeSongList);
-		EventBroker.listen("temp_mrp-button_clicked", this, this.tempFunc);
-		EventBroker.listen("videoLoaded", this, this.setLyrics);
-		EventBroker.listen("videoPaused", this, this.videoPaused);
-		EventBroker.listen("videoPlayed", this, this.videoPlayed);
-		EventBroker.listen("PlaylistUpdate", this, this.updatePlaylist);
-		EventBroker.listen("songTitleChanged", this, this.setupSongList);
 		EventBroker.listen("videoPlayerButton_mrp-button_clicked", this, this.setupViewerForTempPlaylist);
 		EventBroker.listen("useSavedPlaylistButton_mrp-button_clicked", this, this.setupViewerForSavedPlaylist);
-		EventBroker.listen("countDownEnded", this, this.countDownEnded);
-		EventBroker.listen("VolumeChanged", this, this._volumeChanged);
 
-		EventBroker.listen(this.lyricsObj, this.lyricsObj.events.endedEarly, this, this.nextVideo);
-		EventBroker.listen(this.nextButton, this.nextButton.events.clicked, this, this.nextVideo);
-		EventBroker.listen(this.pauseButton, this.pauseButton.events.clicked, this, this._pauseButtonPressed);
-		EventBroker.listen(this.exitButton, this.exitButton.events.clicked, this, this._exit);
-		EventBroker.listen(this.restartButton, this.restartButton.events.clicked, this, this._restartSong);
-		EventBroker.listen(this.songListBox, this.songListBox.events.changed, this, this._changeSong);
+		EventBroker.pageListen("usePlayList", this, this.setSongList);
+		EventBroker.pageListen("newPlaylistAdded", this, this.setupSavedPlayLists);
+		EventBroker.pageListen("videoEnded", this, this.videoEnded);
+		EventBroker.pageListen("videoLoaded", this, this.setLyrics);
+		EventBroker.pageListen("videoPaused", this, this.videoPaused);
+		EventBroker.pageListen("videoPlayed", this, this.videoPlayed);
+		EventBroker.pageListen("PlaylistUpdate", this, this.updatePlaylist);
+		EventBroker.pageListen("songTitleChanged", this, this.setupSongList);
+		EventBroker.pageListen("countDownEnded", this, this.countDownEnded);
+		EventBroker.pageListen("VolumeChanged", this, this._volumeChanged);
+		EventBroker.pageListen(this.startButton, this.startButton.events.clicked, this, this.startPlayer);
+		EventBroker.pageListen(this.temp, this.temp.events.clicked, this, this.tempFunc);
+		EventBroker.pageListen(this.randomizeButton, this.randomizeButton.events.clicked, this, this.randomizeSongList);
+		EventBroker.pageListen(this.playlistSection, this.playlistSection.events.changed, this, this.setupPlayList);
+		EventBroker.pageListen(this.lyricsObj, this.lyricsObj.events.endedEarly, this, this.nextVideo);
+		EventBroker.pageListen(this.nextButton, this.nextButton.events.clicked, this, this.nextVideo);
+		EventBroker.pageListen(this.pauseButton, this.pauseButton.events.clicked, this, this._pauseButtonPressed);
+		EventBroker.pageListen(this.restartButton, this.restartButton.events.clicked, this, this._restartSong);
+		EventBroker.pageListen(this.songListBox, this.songListBox.events.changed, this, this._changeSong);
 
 		this.setupSongList();
 
@@ -143,7 +168,7 @@ class ViewerPage extends HTMLElement {
 		//hide the temp button
 		this.temp.hide();
 
-
+		this.songTitleDiv.hidden = true
 
 		//get the temp playlist name
 		this.tempPlayListTitle = DataBroker.trigger('tempPlayListTitle');
@@ -160,6 +185,7 @@ class ViewerPage extends HTMLElement {
 
 		//hide the randomize button
 		this.randomizeButton.show();
+		this.songTitleDiv.hidden = true
 	}
 
 	_volumeChanged(videoObject){
@@ -172,6 +198,7 @@ class ViewerPage extends HTMLElement {
 		}
 	}
 	_changeSong(event){
+		debugger;
 		var songTitle = event.target.getValue();
 		var songIndex = this.songList.indexOf(songTitle);
 
@@ -304,7 +331,6 @@ class ViewerPage extends HTMLElement {
 		this.nextSongDiv.textContent = message;
 		this.nextSongDiv.hidden = false;
 		this.lyricsObj.hide();
-
 	}
 	nextVideo(action){
 		//if the countdown is hidden then a real video is playing so now it's time to switch

@@ -44,6 +44,7 @@ MRPAlert_template.innerHTML = `
 			<mrp-button id="close" success>close</mrp-button>
 			<mrp-button id="yes" success>Yes</mrp-button>
 			<mrp-button id="no" success>No</mrp-button>
+			<mrp-file-button id="file"></mrp-file-button>
 		</div>
 	</div>
 `
@@ -68,11 +69,19 @@ setup the ability to pass in the header and message as an attribute
 		this.closeButton = this.shadowRoot.querySelector('#close');
 		this.yesButton = this.shadowRoot.querySelector('#yes');
 		this.noButton = this.shadowRoot.querySelector('#no');
+		this.fileButton = this.shadowRoot.querySelector('#file');
 		this.titleElement = this.shadowRoot.querySelector('.titleElement');
+
+		this.yesButton.id = this.id + '_' + this.yesButton.id;
+		this.noButton.id = this.id + '_' + this.noButton.id;
+		this.fileButton.changeID(this.id + '_' + this.fileButton.id);
+
+		EventBroker.listen(this.fileButton, this.fileButton.events.fileLoaded, this, this._fileLoaded);
 		
 		//setup default type - close only
 		this.yesButton.hide();
 		this.noButton.hide();
+		this.fileButton.hide();
 		
 		Lib.Comp.setupDefualtProperties(this, 'div');
 		
@@ -83,11 +92,29 @@ setup the ability to pass in the header and message as an attribute
 		this.events.yes = 'yes';
 		this.events.no = 'no';
 		this.events.closed = 'closed';
+		this.events.fileLoaded = 'fileLoaded';
+	}
+	_fileLoaded(triggerObj){
+		EventBroker.trigger(this,this.events.fileLoaded, triggerObj.triggerArgs);
+		this.close();
 	}
 	setError(title, message){
 		this.changeHeader(title);
 		this.changeMessage(message);
 		this.titleElement.style.backgroundColor = '#ef6776';
+		this.closeButton.show();
+		this.yesButton.hide();
+		this.noButton.hide();
+		this.fileButton.hide();
+	}
+	setInfo(title, message){
+		this.changeHeader(title);
+		this.changeMessage(message);
+		this.titleElement.style.backgroundColor = '#1c84c6';
+		this.closeButton.show();
+		this.yesButton.hide();
+		this.noButton.hide();
+		this.fileButton.hide();
 	}
 	setYesNo(title, message){
 		this.changeHeader(title);
@@ -95,6 +122,15 @@ setup the ability to pass in the header and message as an attribute
 		this.closeButton.hide();
 		this.yesButton.show();
 		this.noButton.show();
+		this.fileButton.hide();
+	}
+	setFile(title, message){
+		this.changeHeader(title);
+		this.changeMessage(message);
+		this.closeButton.show();
+		this.yesButton.hide();
+		this.noButton.hide();
+		this.fileButton.show();
 	}
 	changeHeader(header){
 		this.shadowRoot.querySelector(".titleElement").textContent = header;
@@ -106,10 +142,17 @@ setup the ability to pass in the header and message as an attribute
 		//check if the close button was pressed
 		if(event.path[3] === this.shadowRoot.querySelector('mrp-button') || event.path[2] === this.shadowRoot.querySelector('mrp-button')){
 			this.close();
-			EventBroker.trigger(this,this.events.no);
+
+			if(this.shadowRoot.querySelector('mrp-button').id === 'close'){
+				EventBroker.trigger(this,this.events.closed);
+			}else if(this.shadowRoot.querySelector('mrp-button').id === 'yes'){
+				EventBroker.trigger(this,this.events.yes);
+			}else if(this.shadowRoot.querySelector('mrp-button').id === 'no'){
+				EventBroker.trigger(this,this.events.no);
+			}
 			return false;
 		}
-		
+
 		if(event.path[0].id === "alertButton_" + this.id || event.path[1].id === "alertButton_" + this.id){
 			//this.triggerClose();
 		}

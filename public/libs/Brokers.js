@@ -19,7 +19,6 @@ if (Lib.JS.isUndefined(Broker)) {
 				this._addListenerObj(arguments[0],arguments[1],arguments[2],arguments[3]);
 			}
         };
-		
 		this._addListenerObj = function (ID, event, listenerArgs, callback) {
 			
             if (Lib.JS.isUndefined(EventBroker.objConnections[ID])) {
@@ -42,7 +41,38 @@ if (Lib.JS.isUndefined(Broker)) {
             EventBroker.strConnections[connection].push(eventObj);
             return eventObj;
         };
-		
+
+
+        this.addPageListener = function () {
+            if(arguments.length ===3){
+                this._addPageListenerString(arguments[0],arguments[1],arguments[2]);
+            }else if(arguments.length ===4){
+                this._addPageListenerObj(arguments[0],arguments[1],arguments[2],arguments[3]);
+            }
+        };
+        this._addPageListenerObj = function (ID, event, listenerArgs, callback) {
+
+            if (Lib.JS.isUndefined(EventBroker.objConnections[ID])) {
+                EventBroker.objConnections[ID] = {};
+            }
+
+            if (Lib.JS.isUndefined(EventBroker.objConnections[ID][event])) {
+                EventBroker.objConnections[ID][event] = [];
+            }
+
+            var eventObj = {listenerArgs: listenerArgs, callback: callback,page:true};
+            EventBroker.objConnections[ID][event].push(eventObj);
+            return eventObj;
+        };
+        this._addPageListenerString = function (connection, listenerArgs, callback) {
+            if (Lib.JS.isUndefined(EventBroker.strConnections[connection])) {
+                EventBroker.strConnections[connection] = [];
+            }
+            var eventObj = {connection: connection, listenerArgs: listenerArgs, callback: callback,page:true};
+            EventBroker.strConnections[connection].push(eventObj);
+            return eventObj;
+        };
+
         //Used to remove a listeneter, used if you only want to listen to an event once
         this.remove = function (listener) {
             Lib.JS.remove(EventBroker.connection[listener.connection], listener);
@@ -62,6 +92,79 @@ if (Lib.JS.isUndefined(EventBroker)) {
         var log = new Logger('EventBroker.js', CLL.debug);
 		
 		this.listenAll = 'EventBroker_all';
+
+        this.pageListen = function () {
+            if(arguments.length ===3){
+                this._pageListenString(arguments[0],arguments[1],arguments[2]);
+            }else if(arguments.length ===4){
+                this._pageListenObj(arguments[0],arguments[1],arguments[2],arguments[3]);
+            }
+        }
+        this._pageListenString = function (events, listenerArgs, callback) {
+            if (!Lib.JS.isString(events) && !Lib.JS.isArray(events)) {
+                log.error("The first paramater (events) must be a string or array of strings that represents the event to listen too");
+            }
+
+            if (Lib.JS.isUndefined(listenerArgs)) {
+                log.error("The second paramater must be an object (listenerArgs) or the call back function")
+            }
+
+            if (!Lib.JS.isUndefined(callback) && !Lib.JS.isFunction(callback)) {
+                log.error("The third paramater must be an function");
+            }
+
+            if (Lib.JS.isFunction(listenerArgs)) {
+                callback = listenerArgs;
+                listenerArgs = {};
+            }
+
+            if (Lib.JS.isArray(events)) {
+                var listeners = [];
+                var eventCounter = 0;
+                for (eventCounter = 0; eventCounter < events.length; eventCounter++) {
+                    listeners.push(this.addPageListener(events[eventCounter], listenerArgs, callback));
+                }
+            } else {
+                return this.addPageListener(events, listenerArgs, callback);
+            }
+        };
+        this._pageListenObj = function (obj, events, listenerArgs, callback) {
+            if (Lib.JS.isUndefined(obj) || (Lib.JS.isUndefined(obj.id) && Lib.JS.isUndefined(obj.ID))) {
+                log.error("The first paramater must be defined and have and unique id");
+                return false;
+            }
+
+            var objID = obj.id || obj.ID;
+
+            if (!Lib.JS.isString(events) && !Lib.JS.isArray(events)) {
+                log.error("The 2nd paramater (events) must be a string or array of strings that represents the event to listen too");
+                return false;
+            }
+
+            if (Lib.JS.isUndefined(listenerArgs)) {
+                log.error("The 3rd paramater must be an object (listenerArgs) or the call back function")
+                return false;
+            }
+
+            if (Lib.JS.isUndefined(callback) || !Lib.JS.isFunction(callback)) {
+                log.error("The 4th paramater must be an function");
+                return false;
+            }
+
+            if (Lib.JS.isFunction(listenerArgs)) {
+                callback = listenerArgs;
+                listenerArgs = {};
+            }
+
+            if (Lib.JS.isArray(events)) {
+                for (var eventCounter = 0; eventCounter < events.length; eventCounter++) {
+                    this.addPageListener(objID, events[eventCounter], listenerArgs, callback);
+                }
+            } else {
+                return this.addPageListener(objID, events, listenerArgs, callback);
+            }
+        };
+
 		this.listen = function () {
 			if(arguments.length ===3){
 				this._listenString(arguments[0],arguments[1],arguments[2]);
@@ -69,7 +172,6 @@ if (Lib.JS.isUndefined(EventBroker)) {
 				this._listenObj(arguments[0],arguments[1],arguments[2],arguments[3]);
 			}
 		}
-				
 		this._listenObj = function (obj, events, listenerArgs, callback) {
 			if (Lib.JS.isUndefined(obj) || (Lib.JS.isUndefined(obj.id) && Lib.JS.isUndefined(obj.ID))) {
                 log.error("The first paramater must be defined and have and unique id");
@@ -139,15 +241,14 @@ if (Lib.JS.isUndefined(EventBroker)) {
             this._triggerSting(eventString + '_' + event,caller);
             this._triggerObj(caller,event);
         };
-
 		this.trigger = function () {
             if(Lib.JS.isString(arguments[0])){
 				this._triggerSting(arguments[0],arguments[1]);
 			}else{
-				this._triggerObj(arguments[0],arguments[1]);
+				this._triggerObj(arguments[0],arguments[1],arguments[2]);
 			}
         };
-		this._triggerObj = function (obj,event) {
+		this._triggerObj = function (obj,event, triggerArgs) {
 			if (Lib.JS.isUndefined(obj) || (Lib.JS.isUndefined(obj.id) && Lib.JS.isUndefined(obj.ID))) {
                 log.error("The first paramater must be defined and have and unique id");
 				return false;
@@ -163,14 +264,20 @@ if (Lib.JS.isUndefined(EventBroker)) {
 			if (Lib.JS.isDefined(EventBroker.objConnections[objID][event]) && EventBroker.objConnections[objID][event].length) {
 				for (var listenerCounter = 0; listenerCounter < EventBroker.objConnections[objID][event].length; listenerCounter++) {
 					var listener = EventBroker.objConnections[objID][event][listenerCounter];
-					listener.callback.call(listener.listenerArgs, {target:obj,event});
+
+                    if(Lib.JS.isUndefined(listener.page) || (listener.page && listener.listenerArgs.shadowRoot.contains(obj))){
+                        listener.callback.call(listener.listenerArgs, {target:obj,event,triggerArgs});
+                    }
 				}
             }
 			
 			if (Lib.JS.isDefined(EventBroker.objConnections[objID][this.listenAll]) && EventBroker.objConnections[objID][this.listenAll].length) {
 				for (var listenerCounter = 0; listenerCounter < EventBroker.objConnections[objID][this.listenAll].length; listenerCounter++) {
 					var listener = EventBroker.objConnections[objID][this.listenAll][listenerCounter];
-					listener.callback.call(listener.listenerArgs, {target:obj,event});
+
+                    if(Lib.JS.isUndefined(listener.page) || (listener.page && listener.listenerArgs.shadowRoot.contains(obj))){
+                        listener.callback.call(listener.listenerArgs, {target: obj, event, triggerArgs});
+                    }
 				}
             }
         };
@@ -186,7 +293,9 @@ if (Lib.JS.isUndefined(EventBroker)) {
 
             for (listenerCounter = 0; listenerCounter < EventBroker.strConnections[event].length; listenerCounter++) {
                 var listener = EventBroker.strConnections[event][listenerCounter];
-                listener.callback.call(listener.listenerArgs, triggerArgs);
+                if(Lib.JS.isUndefined(listener.page) || (listener.page && listener.listenerArgs.shadowRoot.contains(triggerArgs))){
+                    listener.callback.call(listener.listenerArgs, triggerArgs);
+                }
             }
         };
         //Used to remove a listeneter, used if you only want to listen to an event once

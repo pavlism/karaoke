@@ -23,14 +23,18 @@ class SongSettings{
 			}
 
 			//need to parse the timming
-			this.timming = {endEarly:0};
+			this.timming = {endEarly:0,startTime:0,};
 			if(Lib.JS.isDefined(JSON.parse(firstLine).timming)){
 				this.timming = JSON.parse(firstLine).timming;	
 			}
 
+			if(Lib.JS.isUndefined(this.timming.pauses)){
+				this.timming.pauses = [];
+			}
+
 			//for older values of timming
 			if(Object.keys(this.timming).length === 0){
-				this.timming = {endEarly:0};
+				this.timming = {endEarly:0,startTime:0, pauses:[]};
 			}
 			
 			//setup lyrics
@@ -41,7 +45,7 @@ class SongSettings{
 		}else{
 			//else if missing add in empty one
 			this.speed = 100;
-			this.timming = {endEarly:0};
+			this.timming = {endEarly:0,startTime:0,pauses:[]};
 			this.volume = 50;
 			this.lyrics = lyricData;
 		}
@@ -78,7 +82,16 @@ class SongSettings{
 		var settings = {speed:this.speed, volume:this.volume, timming:this.timming};
 		this.saveLyrics = JSON.stringify(settings) + '\n' + this.lyrics;
 	}
-
+	addPause(startTime, endTime){
+		this.timming.pauses.push({startTime,endTime});
+		this.updateLyrics();
+	}
+	addEndEarly(time){
+		this.timming.endEarly = time;
+	}
+	addStart(time){
+		this.timming.startTime = time;
+	}
 }
 
 SongSettings.createEmpty = function(){

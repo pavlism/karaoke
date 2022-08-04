@@ -13,6 +13,8 @@ MainMenu_template.innerHTML = `
 		<div><mrp-button primary huge id="tempPlaylistButton">Setup Playlist</mrp-button></div>
 		<div><mrp-button primary huge id="adminButton">Admin</mrp-button></div>
 		<div><mrp-button primary huge id="useSavedPlaylistButton">Use Saved Playlist</mrp-button></div>
+		<div><mrp-button primary huge file id="addNewSong">Add New Song</mrp-button></div>
+		<mrp-alert id="newSongAlert"></mrp-alert>
 	</div>
 `
 class MainMenuPage extends HTMLElement {	
@@ -23,7 +25,24 @@ class MainMenuPage extends HTMLElement {
 		this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(MainMenu_template.content.cloneNode(true));
 		this.button = this.shadowRoot.querySelector('#videoPlayerButton');
-		EventBroker.listen(this.button, this.button.events.clicked, this, this.temp)
+		this.alert = this.shadowRoot.querySelector('#newSongAlert');
+		this.newSongButton = this.shadowRoot.querySelector('#addNewSong');
+
+		this.alert.setFile('Add a New Song', 'Use this button to find the video on your computer:');
+
+		EventBroker.listen(this.button, this.button.events.clicked, this, this.temp);
+		EventBroker.listen(this.newSongButton, this.newSongButton.events.clicked, this, this._newSongClicked);
+		EventBroker.listen(this.alert, this.alert.events.clicked, this, this._newSongClicked);
+		EventBroker.listen(this.alert, this.alert.events.fileLoaded, this, this._fileLoaded);
+	}
+	_newSongClicked(){
+		this.alert.show();
+	}
+	_fileLoaded(triggerObj){
+		//TODO move the file to to the videos folder vai the server
+		var songTitle = "No Doubt - It's My Life (edited)";
+		EventBroker.trigger("new song added by user", songTitle);
+
 	}
 	temp(){
 		debugger;

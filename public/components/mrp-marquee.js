@@ -51,7 +51,9 @@ MRPMarquee_template.innerHTML = `
 	</div>
 `
 
-//add in the adlity to set a defualt value
+//setup the pauses
+
+//make this even if the user pauses on the video
 
 class MRPMarquee extends HTMLElement {
 	constructor() {
@@ -78,8 +80,8 @@ class MRPMarquee extends HTMLElement {
 		this.start(this.startParameters.speed,this.startParameters.timing,this.startParameters.durationInSeconds);
 	}
 	pause(){
-		this.lyricsDiv.style.animationPlayState = 'paused'
-		this.isPaused = true
+		this.lyricsDiv.style.animationPlayState = 'paused';
+		this.isPaused = true;
 		EventBroker.triggerBoth(this,this.events.paused,this.id + '_mrp-Marquee');
 	}
 	unPause(){
@@ -137,7 +139,6 @@ class MRPMarquee extends HTMLElement {
 
 		//remove any previous timeouts
 		if(this.timeouts.length>0){
-			debugger;
 			for(let timeOutCounter = 0;timeOutCounter<this.timeouts.length;timeOutCounter++){
 				clearInterval(this.timeouts[timeOutCounter]);
 			}
@@ -151,17 +152,17 @@ class MRPMarquee extends HTMLElement {
 		this._setupEarlyEnding(timing.endEarly, durationInSeconds);
 		durationInSeconds = durationInSeconds - timing.endEarly;
 
+		//deal with late start
+		if(Lib.JS.isDefined(timing.startTime)){
+			durationInSeconds = durationInSeconds - timing.startTime;
+		}
+
 		//speed = 100;
 		this.durationInSeconds = Math.round(durationInSeconds*(100/speed) * 100) / 100;
 
 		//not sure why 65%, but the text was scrolling too fast on default 65% seems
 		this.durationInSeconds = this.durationInSeconds /0.70;
-
 		this.durationInSeconds = this.durationInSeconds-this.totalTimePauses;
-
-		//console.log('this.durationInSeconds:' + this.durationInSeconds);
-		
-		//this.durationInSeconds = 500;
 		
 		this.containter.removeChild(this.lyricsDiv);
 		this.lyricsDiv = document.createElement("div");
@@ -204,14 +205,20 @@ class MRPMarquee extends HTMLElement {
 //		console.log('durationInSeconds:' + this.durationInSeconds);
 		//console.log('startingPoint:' + this.startingPoint);
 
-		this._setupPausesTimeout();
+		this._setupPausesTimeout(timing);
+
+		if(Lib.JS.isDefined(timing.startTime)){
+			var thisObj = this;
+			setTimeout(function() {thisObj.pause()}, 50);
+			setTimeout(function() {thisObj.unPause()}, timing.startTime * 1000);
+		}
 	}
 	_setupEarlyEnding(endEarly = 0, duration){
 		if(endEarly===0){
 			return false;
 		}
 
-		Lib.JS.setTimeout(this,this._endEarly,(duration-endEarly) * 1000);
+		Lib.JS.setTimeout(this,this._endEarly,endEarly * 1000);
 	}
 	_endEarly(){
 		EventBroker.triggerBoth(this,this.events.endedEarly,this.id + '_mrp-Marquee');
@@ -265,9 +272,10 @@ class MRPMarquee extends HTMLElement {
 			this.pauses[pauseCounter].whenToPause = timeInSecondsToPause;
 		}
 	}
-	_setupPausesTimeout(){
+	_setupPausesTimeout(timing){
+		debugger;
 		this.pauseCounter = 0;
-		this.timeouts = [];
+		this.timeouts = timing.pauses;
 
 		//if pauses exists
 		if(this.pauses.length>0){

@@ -1,3 +1,4 @@
+{"speed":100,"volume":100,"timming":{"endEarly":0}}
 There goes the siren that warns of the air raid
 There comes the sound of the guns sending flak
 Out for the scramble we've got to get airborne

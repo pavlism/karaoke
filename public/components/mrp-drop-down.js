@@ -215,6 +215,7 @@ class MRPDropDown extends HTMLElement {
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-drop-down_changed',triggerObj);
 			EventBroker.trigger(this,this.events.changed);
+
 		}else if(this['class'] !== ""){
 			EventBroker.trigger(this['class'] + '_mrp-drop-down_changed',triggerObj);
 		}else{

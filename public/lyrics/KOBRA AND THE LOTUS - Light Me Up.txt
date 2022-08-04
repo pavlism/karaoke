@@ -1,4 +1,4 @@
-{"duration":259,"startingPoint":-80,"volume":100}
+{"speed":100,"volume":50,"timming":{"endEarly":0}}
 Watching you sitting there alone again
 The pain is eating you alive
 You're suffering

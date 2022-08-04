@@ -1,4 +1,4 @@
-{"duration":194,"startingPoint":-60,"volume":100}
+{"speed":100,"volume":92.5,"timming":{"endEarly":0}}
 Crazy
 Oh, oh
 

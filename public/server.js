@@ -49,6 +49,16 @@ class Server {
         return data;
     }
 
+    static async addNewSong(path) {
+        var options = {};
+        options.method = 'POST';
+        options.body=JSON.stringify({path});
+
+        options.headers={'Content-Type':'application/json'}
+        const response = await fetch('/api/newSong',options);
+        return response;
+    }
+
     static async updateSongLyrics(songTitle, lyrics) {
         var options = {};
         options.method = 'POST';

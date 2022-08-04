@@ -1,4 +1,4 @@
-{"duration":269,"startingPoint":-83,"volume":100}
+{"speed":100,"volume":72.5,"timming":{"endEarly":0}}
 Another head hangs lowly
 Child is slowly taken
 And the violence causes silence

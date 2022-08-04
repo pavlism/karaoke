@@ -1,4 +1,4 @@
-{"duration":201,"startingPoint":-62,"volume":100}
+{"speed":100,"volume":72.5,"timming":{"endEarly":0}}
 Baby, baby tell me more of your lies
 
 Hurt and pain
