@@ -51,8 +51,8 @@ MRPMarquee_template.innerHTML = `
 	</div>
 `
 
+//TODO
 //setup the pauses
-
 //make this even if the user pauses on the video
 
 class MRPMarquee extends HTMLElement {
@@ -75,20 +75,34 @@ class MRPMarquee extends HTMLElement {
 		this.events.paused = 'paused';
 		this.events.unpaused = 'unpaused';
 		this.startParameters = {};
+		this.externalPause = false;
+		this.isPausedBeforeExternalPause = false;
 	}
 	restart(){
 		this.start(this.startParameters.speed,this.startParameters.timing,this.startParameters.durationInSeconds);
 	}
 	pause(){
+		this.externalPause = true;
+		this.isPausedBeforeExternalPause = this.isPaused;
+		this._pause();
+	}
+	unPause(){
+		this.externalPause = false;
+		if(!this.isPausedBeforeExternalPause){
+			this._unPause();
+		}
+	}
+	_pause(){
 		this.lyricsDiv.style.animationPlayState = 'paused';
 		this.isPaused = true;
 		EventBroker.triggerBoth(this,this.events.paused,this.id + '_mrp-Marquee');
 	}
-	unPause(){
+	_unPause(){
 		this.lyricsDiv.style.animationPlayState = 'running';
 		this.isPaused = false;
 		EventBroker.triggerBoth(this,this.events.unpaused,this.id + '_mrp-Marquee');
 	}
+
 	_calcStartingPont(duration){
 
 		var lineHeight = this.lyricsDiv.children[1].offsetHeight;
@@ -149,7 +163,6 @@ class MRPMarquee extends HTMLElement {
 		//console.log('speed:' + speed);
 
 		//deal with ending early
-		this._setupEarlyEnding(timing.endEarly, durationInSeconds);
 		durationInSeconds = durationInSeconds - timing.endEarly;
 
 		//deal with late start
@@ -182,9 +195,6 @@ class MRPMarquee extends HTMLElement {
 		//get teh starting point
 		this.startingPoint = this._calcStartingPont(this.durationInSeconds);
 
-		//setup the timmings for the pauses
-		this._setupTimingForPauses(this.durationInSeconds);
-
 		//this.startingPoint = -194;
 		this.lyricsDiv.style.animationDelay = this.startingPoint.toString() + 's';
 		this.lyricsDiv.style.animationDuration = this.durationInSeconds.toString() + 's';
@@ -205,20 +215,57 @@ class MRPMarquee extends HTMLElement {
 //		console.log('durationInSeconds:' + this.durationInSeconds);
 		//console.log('startingPoint:' + this.startingPoint);
 
-		this._setupPausesTimeout(timing);
+		this.startAtZero = true;
 
 		if(Lib.JS.isDefined(timing.startTime)){
 			var thisObj = this;
-			setTimeout(function() {thisObj.pause()}, 50);
-			setTimeout(function() {thisObj.unPause()}, timing.startTime * 1000);
-		}
-	}
-	_setupEarlyEnding(endEarly = 0, duration){
-		if(endEarly===0){
-			return false;
+			setTimeout(function() {thisObj._pause()}, 50);
+			this.startAtZero = false;
 		}
 
-		Lib.JS.setTimeout(this,this._endEarly,endEarly * 1000);
+		this.endEarly = false;
+		if(Lib.JS.isDefined(timing.endEarly) && timing.endEarly>0){
+			this.endEarly = true;
+		}
+
+		this.timing = timing;
+		this._setupPauses()
+		this.timer = 0;
+		this.pauseCounter =0;
+		EventBroker.listen("mrp-marquee_timmerTick", this, this._incrementTimer);
+		this.secondInterval = setInterval(function () {EventBroker.trigger("mrp-marquee_timmerTick")}, 1000);
+	}
+	_incrementTimer(){
+		if(!this.externalPause){
+			this.timer++;
+		}
+
+		if(!this.startAtZero && this.timer >= this.timing.startTime){
+			this.startAtZero = true;
+			this._unPause();
+		}
+
+		if(Lib.JS.isDefined(this.timing.pauses[this.pauseCounter])){
+			if(this.timer >= this.timing.pauses[this.pauseCounter].startTime && !this.timing.pauses[this.pauseCounter].pausedUsed){
+				this._pause()
+				this.timing.pauses[this.pauseCounter].pausedUsed = true;
+			}
+
+			if(this.timer >= this.timing.pauses[this.pauseCounter].endTime){
+				this._unPause();
+				this.pauseCounter++;
+			}
+		}
+
+		if(this.endEarly && this.timer >= this.timing.endEarly){
+			clearInterval(this.secondInterval);
+			this._endEarly();
+		}
+	}
+	_setupPauses(){
+		for(var pauseCounter = 0;pauseCounter<this.timing.pauses.length;pauseCounter++){
+			this.timing.pauses[pauseCounter].pausedUsed = false;
+		}
 	}
 	_endEarly(){
 		EventBroker.triggerBoth(this,this.events.endedEarly,this.id + '_mrp-Marquee');
@@ -255,52 +302,10 @@ class MRPMarquee extends HTMLElement {
 		//return the total timming to pauses and a clean line
 		return {line,timeToPause};
 	}
-	_setupTimingForPauses(duration){
-		//use the duration to estimated what time the pauses will show up.
-		//Each line should see and equal amount of time on the screen, so duration/numlines *get real lines show* with give you how long each line will take
-		var lineHeight = this.lyricsDiv.children[1].offsetHeight;
-
-		//rough estimate
-		var numLines = Math.round(this.lyricsDiv.scrollHeight/lineHeight);
-		var timePerLine = duration/numLines;
-		var timeInSecondsToPause = 0;
-
-		//loop though each pause and setting the pause Object
-		for(var pauseCounter = 0;pauseCounter<this.pauses.length;pauseCounter++){
-			//then simple calcs to determine when to put in the pause
-			timeInSecondsToPause = Math.round(this.pauses[pauseCounter].whenToPause * timePerLine);
-			this.pauses[pauseCounter].whenToPause = timeInSecondsToPause;
-		}
-	}
-	_setupPausesTimeout(timing){
-		debugger;
-		this.pauseCounter = 0;
-		this.timeouts = timing.pauses;
-
-		//if pauses exists
-		if(this.pauses.length>0){
-			//setup listener to listen after each second.
-
-			for(var pauseCounter = 0;pauseCounter<this.pauses.length;pauseCounter++){
-				this.timeouts.push(Lib.JS.setTimeout(this,this._checkPauseTimeout,this.pauses[pauseCounter].whenToPause * 1000));
-			}
-
-		}else{
-			this.pauses = [];
-			this.pauseObj = {};
-		}
-	}
-	_checkPauseTimeout(){
-		var timeToPause = this.pauses[this.pauseCounter].pauseTime;
-		this.pause();
-		Lib.JS.setTimeout(this,this.unPause,timeToPause * 1000);
-	}
-
 	addText(text){
 		this.text = text;
 		this.lyricsDiv.innerText = this.text;
 	}
-
 	getValues(){	
 		//return this.list;
 	}

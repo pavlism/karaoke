@@ -9,7 +9,6 @@ class SongSetupPage extends VideoPlayerPage {
 
 	constructor() {
 		super();
-		//this.attachShadow({mode:'open'});
 		this.shadowRoot.appendChild(SongSetup_template.content.cloneNode(true));
 
 		this.songSavedAlert = this.shadowRoot.querySelector('#songSavedAlert');

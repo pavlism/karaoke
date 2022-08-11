@@ -136,7 +136,7 @@ if (Lib.JS.isUndefined(EventBroker)) {
 
             var objID = obj.id || obj.ID;
 
-            if (!Lib.JS.isString(events) && !Lib.JS.isArray(events)) {
+            if (Lib.JS.isUndefined(events) || (!Lib.JS.isString(events) && !Lib.JS.isArray(events))) {
                 log.error("The 2nd paramater (events) must be a string or array of strings that represents the event to listen too");
                 return false;
             }

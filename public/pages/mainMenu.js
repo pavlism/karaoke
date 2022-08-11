@@ -30,7 +30,6 @@ class MainMenuPage extends HTMLElement {
 
 		this.alert.setFile('Add a New Song', 'Use this button to find the video on your computer:');
 
-		EventBroker.listen(this.button, this.button.events.clicked, this, this.temp);
 		EventBroker.listen(this.newSongButton, this.newSongButton.events.clicked, this, this._newSongClicked);
 		EventBroker.listen(this.alert, this.alert.events.clicked, this, this._newSongClicked);
 		EventBroker.listen(this.alert, this.alert.events.fileLoaded, this, this._fileLoaded);
@@ -43,9 +42,6 @@ class MainMenuPage extends HTMLElement {
 		var songTitle = "No Doubt - It's My Life (edited)";
 		EventBroker.trigger("new song added by user", songTitle);
 
-	}
-	temp(){
-		debugger;
 	}
 }
 

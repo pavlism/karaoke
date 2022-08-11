@@ -219,8 +219,6 @@ app.post('/api/addPlaylist',(request, response)=>{
 		}
 		response.end();
 	});
-
-	response.json('');
 });
 app.delete('/api/playList',(request, response)=>{
 	console.log('delete playList');

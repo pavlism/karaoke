@@ -1,4 +1,4 @@
-{"speed":100,"volume":50,"timming":{"endEarly":21,"startTime":6,"pauses":[{"startTime":11,"endTime":15}]}}
+{"speed":100,"volume":50,"timming":{"endEarly":25,"startTime":6,"pauses":[{"startTime":11,"endTime":15},{"startTime":21,"endTime":22}]}}
 How long, how long will I slide?
 Well, separate my side
 I don't, I don't believe it's bad

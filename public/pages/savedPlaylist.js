@@ -1,17 +1,15 @@
-const Viewer_template = document.createElement('template');
-Viewer_template.innerHTML = `
-`
-class ViewerPage extends VideoPlayerPage {
+const SavedList_template = document.createElement('template');
+SavedList_template.innerHTML = ``
+
+class SavedPlaylistPage extends VideoPlayerPage {
+	//TODO later
+	//play around with screen sizes - did not work well on lap top
+	//have video loading while countdown is playing
+
 	constructor() {
 		super();
 
-		this.shadowRoot.appendChild(Viewer_template.content.cloneNode(true));
-
-		this.startNewSongButton.hide();
-		this.pauseLyricsButton.hide();
-		this.unpauseLyricsButton.hide();
-		this.exitNoSaveButton.hide();
-		this.endEarlyButton.hide();
+		this.shadowRoot.appendChild(SavedList_template.content.cloneNode(true));
 
 		//setup videp player events
 		this.videoPlayer.onloadedmetadata = function() {EventBroker.trigger('videoLoaded', this)};
@@ -31,7 +29,6 @@ class ViewerPage extends VideoPlayerPage {
 
 		this.songSettings = SongSettings.createEmpty();
 		this.tempView = true;
-
 		EventBroker.pageListen("usePlayList", this, this.setSongList);
 		EventBroker.pageListen("newPlaylistAdded", this, this.setupSavedPlayLists);
 		EventBroker.pageListen("videoEnded", this, this.videoEnded);
@@ -52,55 +49,29 @@ class ViewerPage extends VideoPlayerPage {
 		EventBroker.pageListen(this.songListBox, this.songListBox.events.changed, this, this._changeSong);
 		EventBroker.pageListen(this.exitButton, this.exitButton.events.clicked, this, this._exit);
 
-		//this.setupSongList();
+		this.setupSongList();
 
 		this.songIndex = 0;
 		this.isPaused = false;
 
-		this.selectPlaylistDiv.hidden = true;
-
-		//change the text on the next button to start
-		this.startButton.textContent = "Start - Playlist Loading";
-		this.startButton.disable();
-		this.nextButton.disable();
-
-		//hide the playlists button
+		this.videoPlayer.hidden = true;
+		this.startButton.hide();
+		this.startNewSongButton.hide();
+		this.unpauseLyricsButton.hide()
+		this.pauseLyricsButton.hide();
+		this.endEarlyButton.hide();
+		this.exitNoSaveButton.hide();
+		this.temp.hide();
 		this.playlistButton.hide();
 
-		//hide the randomize button
-		this.randomizeButton.hide();
-
-		this.songListSpan.hidden = true;
-		this.songListBox.hide();
-
-		//hide the temp button
-		this.temp.hide();
-
+		this.selectPlaylistDiv.hidden = false;
+		this.songListSpan.hidden = false;
+		this.songListBox.show();
 		this.songTitleDiv.hidden = true
-
-		//get the temp playlist name
-		this.tempPlayListTitle = DataBroker.trigger('tempPlayListTitle');
-		this._loadTempPlayList();
-		this.videoPlayer.hidden = true;
-
-		this.pingInterval = Lib.JS.setInterval(this,this._loadTempPlayList, 3000);
-	}
-	async _loadTempPlayList(){
-		const data = await Server.getPlayList(this.tempPlayListTitle);
-		if(data){
-			this.setSongList(JSON.parse(data), false);
-			this.startButton.textContent = "Start";
-			this.startButton.enable();
-		}
 	}
 	_exit(){
-		//turn off the interval
-		if(this.tempView){
-			clearInterval(this.pingInterval);
-		}
-
 		EventBroker.trigger('switchToMainMenu');
 	}
 }
 
-window.customElements.define('viewer-page', ViewerPage);
+window.customElements.define('saved-playlist-page', SavedPlaylistPage);
