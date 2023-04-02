@@ -38,12 +38,14 @@ class MRPCheckBox extends HTMLElement {
 		}
 	}
 	_handleClick(event){
-		if(this.button.disabled){
+		if(this.inputBox.disabled){
 			event.preventDefault();
 			return false;
 		}
+
+		var path = event.composedPath();
 		
-		if(event.path[0].type !== "checkbox"){
+		if(path[0].type !== "checkbox"){
 			return false;
 		}
 		

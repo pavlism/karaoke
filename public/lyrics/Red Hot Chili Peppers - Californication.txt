@@ -1,4 +1,4 @@
-{"speed":100,"volume":50,"timming":{"endEarly":0}}
+{"speed":100,"volume":75,"timming":{"endEarly":0,"pauses":[]}}
 Psychic spies from China try to steal your mind's elation
 And little girls from Sweden dream of silver-screen quotation
 And if you want these kind of dreams, it's Californication

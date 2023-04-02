@@ -145,6 +145,10 @@ MRPTable_template.innerHTML = `
 
 //TODO 
 
+//add in ability to add images to a cell
+
+
+
 //add in the endabled/disabled functions
 // get download buttons to work
 //clean up the old code that is no longer used
@@ -168,6 +172,9 @@ class MRPTable extends HTMLElement {
 		this.searchDiv = this.shadowRoot.querySelector('div.search');
 		this.downloadDiv = this.shadowRoot.querySelector('div.download');
 		this.pagingDiv = this.shadowRoot.querySelector('div.paging');
+		this.hiddenCols = [];
+		this.log = new Logger('mrp-table.js', CLL.debug);
+		var blankStudentImage = this.shadowRoot.querySelector('blankStudentImage');
 		
 		Lib.Comp.setupDefualtProperties(this, 'table');
 	}
@@ -177,6 +184,10 @@ class MRPTable extends HTMLElement {
 		}
 		
 		this.data = data;
+
+		if(Lib.JS.isUndefined(data[0].length)){
+			this.data = this._convertObjectsIntoArrays();
+		}
 
 		//setup Pagin
 		this._handlePaging(this.data);
@@ -204,6 +215,97 @@ class MRPTable extends HTMLElement {
 			this._addDownloadButtons();
 		}
 	}
+	sortByCol(colInfo, isAsc){
+		colInfo = this._getColNumFromInfo(colInfo);
+		this._handleSort(colInfo, isAsc);
+	}
+	_getColNumFromInfo(colInfo, body, headers){
+
+		if(Lib.JS.isUndefined(body)){
+			var body = this.shadowRoot.querySelector("tbody");
+		}
+
+		if(Lib.JS.isUndefined(headers)){
+			var headers = this.shadowRoot.querySelector("thead");
+		}
+
+		if(Lib.JS.isString(colInfo)){
+			for(var colCounter = 0;colCounter<body.children.length;colCounter++){
+				var currentHeader = headers.children[0].children[colCounter].textContent;
+				if(colCounter === this.sortCol){
+					currentHeader = Lib.String.trimRight(currentHeader,1)
+				}
+
+				if(colInfo === currentHeader){
+					colInfo = colCounter;
+					break;
+				}
+			}
+		}
+		return colInfo;
+	}
+	getRowData(rowNum){
+		return this.data[rowNum];
+	}
+	getColData(colInfo){
+
+		var headers = this.shadowRoot.querySelector("thead");
+		var body = this.shadowRoot.querySelector("tbody");
+
+		colInfo = this._getColNumFromInfo(colInfo, body, headers);
+		debugger;
+
+	}
+
+
+	hideCol(colInfo){
+		//colInfo is either going to be a number or the header name
+		this._showHideCols(colInfo,true);
+	}
+	showCol(colInfo){
+		//colInfo is either going to be a number or the header name
+		this._showHideCols(colInfo,false);
+	}
+	_showHideCols(colInfo, isHidden){
+		var headers = this.shadowRoot.querySelector("thead");
+		var body = this.shadowRoot.querySelector("tbody");
+
+		colInfo = this._getColNumFromInfo(colInfo, body, headers);
+
+		if(Lib.JS.isString(colInfo)){
+			this.log.error("hideCol() - Cannot find the header: " + colInfo);
+			return false;
+		}
+
+		headers.children[0].children[colInfo].hidden = isHidden;
+
+		for(var rowCounter = 0;rowCounter<body.children.length;rowCounter++){
+			body.children[rowCounter].children[colInfo].hidden = isHidden;
+		}
+
+		this.hiddenCols[colInfo] = isHidden;
+	}
+
+	hideHeaders(){
+		this._showHideHeaders(true);
+	}
+	showHeaders(){
+		this._showHideHeaders(false);
+	}
+	_showHideHeaders(isHidden){
+		var headers = this.shadowRoot.querySelector("thead");
+
+		for(var colCounter = 0;colCounter<headers.children[0].children.length;colCounter++){
+			//if a col is hidden then make sure it's header stay hidden
+			if(this.hiddenCols[colCounter]){
+				headers.children[0].children[colCounter].hidden = true;
+			}else{
+				headers.children[0].children[colCounter].hidden = isHidden;
+			}
+
+		}
+	}
+
 	_handlePaging(data, currentPage = 1){
 		if(this.getAttribute('pages')==null){
 			this.pageSize = -1;
@@ -259,7 +361,6 @@ class MRPTable extends HTMLElement {
 			pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>1</mrp-button>";
 		}
 		
-		
 		//adding extra buttons
 		if(this.numPages >=7){
 			start = this.currentPage - 2;
@@ -288,17 +389,17 @@ class MRPTable extends HTMLElement {
 		
 		for (var buttonCounter = start; buttonCounter <= end; buttonCounter++) {
 			if(buttonCounter === this.currentPage){
-				pagingText = pagingText + "<mrp-button success class='"+this.id+"_page'>"+buttonCounter+"</mrp-button>";
+				pagingText = pagingText + "<mrp-button success id='"+this.id+"_page'>"+buttonCounter+"</mrp-button>";
 			}else{
-				pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>"+buttonCounter+"</mrp-button>";
+				pagingText = pagingText + "<mrp-button id='"+this.id+"_page'>"+buttonCounter+"</mrp-button>";
 			}
 		}
 		
 		if(this.numPages>1){
 			if(this.numPages === this.currentPage){
-				pagingText = pagingText + "<mrp-button success class='"+this.id+"_page'>"+this.numPages+"</mrp-button>";
+				pagingText = pagingText + "<mrp-button success id='"+this.id+"_page'>"+this.numPages+"</mrp-button>";
 			}else{
-				pagingText = pagingText + "<mrp-button class='"+this.id+"_page'>"+this.numPages+"</mrp-button>";
+				pagingText = pagingText + "<mrp-button id='"+this.id+"_page'>"+this.numPages+"</mrp-button>";
 			}
 		}		
 		return pagingText;
@@ -325,8 +426,10 @@ class MRPTable extends HTMLElement {
 		this._clearData();
 		this._setupData(this.data);
 	}
-	
-	
+
+	search(searchString){
+		this._handleNewSearchString(searchString);
+	}
 	_handleSearch(){
 		if(this.getAttribute('search')===""){
 			this.shadowRoot.querySelector("div.search").innerHTML = "Search:<mrp-text-box id='"+this.id+"_search'></mrp-text-box>";
@@ -348,11 +451,15 @@ class MRPTable extends HTMLElement {
 			return false;
 		}
 		
+		this._handleNewSearchString(this.searchString);
+	}
+	_handleNewSearchString(searchString){
+		this.searchString = searchString;
 		this.currentData = [];
-		var rowPassed = true;		
-		
+		var rowPassed = true;
+
 		this.currentData.push(this.data[0]);
-		
+
 		for (var rowCounter = 1; rowCounter < this.data.length; rowCounter++) {
 			rowPassed = false;
 			for (var colCounter = 0; colCounter < this.numCol; colCounter++) {
@@ -361,7 +468,7 @@ class MRPTable extends HTMLElement {
 					break;
 				}
 			}
-			
+
 			if(rowPassed){
 				this.currentData.push(this.data[rowCounter]);
 			}
@@ -382,7 +489,7 @@ class MRPTable extends HTMLElement {
 	}
 	_setupData(data){
 		this.numCol = data[0].length;
-		
+
 		//setup the headers
 		var row = this.shadowRoot.querySelector("thead").insertRow(0);
 		
@@ -397,10 +504,20 @@ class MRPTable extends HTMLElement {
 			}else{
 				th.innerHTML = data[0][colCounter];
 			}
-			th.setAttribute('col',colCounter)
+			th.setAttribute('col',colCounter);
+
 			row.appendChild(th);
+
+			//setup the hidden columns info
+			if(this.hiddenCols.length <= colCounter){
+				this.hiddenCols.push(false);
+			}else{
+				//check if col is hidden
+				row.children[colCounter].hidden = this.hiddenCols[colCounter];
+			}
+
 		}
-		
+
 		var end = data.length;
 		var start = 1;
 		
@@ -420,11 +537,51 @@ class MRPTable extends HTMLElement {
 			currentRow++;
 			for (var colCounter = 0; colCounter < this.numCol; colCounter++) {
 				var cell = row.insertCell(colCounter);
-				cell.innerHTML = data[rowCounter][colCounter];
+				cell.setAttribute('col',colCounter);
+				cell.innerHTML = this._checkForObjects(data[rowCounter][colCounter]);
+				cell.hidden = this.hiddenCols[colCounter];
 			}
 		}
 	}
+	_checkForObjects(cell){
+		if(!Lib.JS.isObject(cell)){
+			return cell;
+		}
+
+		var html = '';
+
+		if(Lib.JS.isDefined(cell.image)){
+			//TODO make this work for any image someday
+			html = html + '<img src="blankstudentIamge.png" id="blankStudentImage" width="50" height="50">';
+			html = html + cell.text;
+			return html;
+		}
+	}
+	_convertObjectsIntoArrays(){
+		var tempDataArray = [];
+
+		for(var rowCounter = 0;rowCounter < this.data.length;rowCounter++){
+			//add in the header row
+			if(rowCounter === 0){
+				var headerArray = [];
+				for (const property in this.data[rowCounter]) {
+					headerArray.push(property);
+				}
+				tempDataArray.push(headerArray);
+			}
+
+			var rowArray = [];
+			for (const property in this.data[rowCounter]) {
+				rowArray.push(this.data[rowCounter][property]);
+			}
+			tempDataArray.push(rowArray);
+		}
+		return tempDataArray;
+	}
+
 	_printData_excel(filename="report.xlsl", data = this.data){
+		data = this._removeHiddenData(data);
+
 		var wb = XLSX.utils.book_new();
 		wb.Props = {
                 Title: "SheetJS Tutorial",
@@ -468,6 +625,9 @@ class MRPTable extends HTMLElement {
 		}
 	}
 	_printData(data, filename="report.csv") {
+
+		data = this._removeHiddenData(data);
+
 		var processRow = function (row) {
 			var finalVal = '';
 			for (var j = 0; j < row.length; j++) {
@@ -507,33 +667,63 @@ class MRPTable extends HTMLElement {
 			}
 		}
 	}
+	_removeHiddenData(allData){
+		var data = [];
+
+		for(var rowCounter = 0; rowCounter<allData.length;rowCounter++){
+			var row = [];
+			for(var colCounter = 0; colCounter<allData[rowCounter].length;colCounter++){
+				if(!this.hiddenCols[colCounter]){
+					row.push(allData[rowCounter][colCounter]);
+				}
+			}
+			data.push(row)
+		}
+		return data;
+	}
 
 	_handleClick(event){
 		if(this.disabled){
 			event.preventDefault();
 			return false;
 		}
-		
-		if(this.sort && !isNaN(parseInt(event.path[0].getAttribute('col')))){
+
+		var path = event.composedPath();
+		var path0ID = path[0].id;
+		var path1ID = path[1].id;
+
+		if(this.sort && !isNaN(parseInt(path[0].getAttribute('col')))){
 			//if the click was on a header and the sort option is true
-			this._handleSort(parseInt(event.path[0].getAttribute('col')));
-		}else if(event.path[1].id === this.id + "_print_Current" || event.path[0].id === this.id + "_print_Current"){
+			this._handleSort(parseInt(path[0].getAttribute('col')));
+		}else if(path1ID === this.id + "_print_Current"){
 			//if the click was on a print button
 			if(this.currentData.length ===0){
 				this._printData(this.data);
 			}else{
 				this._printData(this.currentData);
 			}
-		}else if(event.path[1].id === this.id + "_print_All" || event.path[0].id === this.id + "_print_All"){
+			EventBroker.trigger(this.id + '_mrp-table_clicked_print_Current',this.data);
+			return false
+		}else if(path1ID === this.id + "_print_All"){
 			//if the click was on a print button
 			EventBroker.trigger(this.id + '_mrp-table_clicked_print_All',this.data);
-		}else if(event.path[1].id === this.id + "_print_Each" || event.path[0].id === this.id + "_print_Each"){
+			return false
+		}else if(path1ID === this.id + "_print_Each"){
 			//if the click was on a print button
 			EventBroker.trigger(this.id + '_mrp-table_clicked_print_Each',this.data);
+			return false
+		}else if(path0ID === this.id + "_search"){
+			//if the search filter was on a print button
+			EventBroker.trigger(this.id + '_mrp-table_clicked_search',this.data);
+			return false
+		}else if(path1ID === this.id + "_next" || path0ID === this.id + "_next" || path1ID === this.id + "_prev" || path0ID === this.id + "_prev" || path1ID === this.id + "_page" || path0ID === this.id + "_page"){
+			//if a paging button was clicked
+			EventBroker.trigger(this.id + '_mrp-table_page_changed',this.data);
+			return false
 		}
 		
 	
-		var triggerObj = {element:this, event:event, newValue:event.path[0].value, row:this._buildRowObject(event)};
+		var triggerObj = {element:this, event:event, newValue:Lib.String.trimRight(path[0].textContent,1), row:this._buildRowObject(event, path)};
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-table_clicked',triggerObj);
@@ -543,8 +733,8 @@ class MRPTable extends HTMLElement {
 			EventBroker.trigger('mrp-table_clicked',triggerObj);
 		}
 	}
-	_buildRowObject(event){
-		var rowNum = this._getRowClicked(event);
+	_buildRowObject(event, path){
+		var rowNum = this._getRowNumClicked(event, path);
 		
 		var row = {};
 		row.rowNum = rowNum;
@@ -562,27 +752,39 @@ class MRPTable extends HTMLElement {
 		}
 		return row;
 	}
-	_getRowClicked(event){
-		for (var pathCounter = 0; pathCounter < event.path.length; pathCounter++) {
-			//check for sort column 
-			if(Lib.JS.isDefined(event.path[pathCounter].getAttribute)){
-				if(!isNaN(parseInt(event.path[pathCounter].getAttribute('row-num')))){
-					return parseInt(event.path[pathCounter].getAttribute('row-num'));
+	_getRowNumClicked(event,path){
+		var rowNum = -1;
+		var numToSearch = path.length;
+
+		if(numToSearch>25){
+			numToSearch = 25;
+		}
+
+		for(var pathCounter =0;pathCounter<numToSearch;pathCounter++){
+			if(Lib.JS.isDefined(path[pathCounter].getAttribute)){
+				if(path[pathCounter].getAttribute('row-num')!== null){
+					return path[pathCounter].getAttribute('row-num')
 				}
 			}
 		}
+
+		return rowNum;
 	}
-	_handleSort(column){
-		//check for aorting asc or desc
+	_handleSort(column, isAsc){
+		//check for sorting asc or desc
 		if(this.sortCol === column){
 			this.sortIsAsc = !this.sortIsAsc;
 		}
-		
+
+		if(Lib.JS.isDefined(isAsc)){
+			this.sortIsAsc = isAsc;
+		}
+
 		this.sortCol = column;
 		
 		var data = this.data.slice();
 		
-		var sortFunction = this._getsortFunction(column, this.sortIsAsc);
+		var sortFunction = this._getSortFunction(column, this.sortIsAsc);
 		var headers = data.shift();
         data.sort(sortFunction);
         this.data = [];
@@ -592,7 +794,7 @@ class MRPTable extends HTMLElement {
 		this._clearData();
 		this._setupData(this.data);
 	}
-	_getsortFunction(sortIndex, isAsync) {
+	_getSortFunction(sortIndex, isAsync) {
         //The sort function  used to sort the columns
         var multipliyer = -1;
         if (isAsync) {
@@ -609,6 +811,7 @@ class MRPTable extends HTMLElement {
             return 0;
         };
     }
+
 	show(){
 		this.table.classList.remove('hidden');
 		this.searchDiv.classList.remove('hidden');

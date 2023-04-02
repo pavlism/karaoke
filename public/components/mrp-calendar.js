@@ -1,5 +1,11 @@
 const MRPcalendar_template = document.createElement('template');
 MRPcalendar_template.innerHTML = `
+	<style>
+	.fc-event-main {
+    	font-size: 1.4em;
+    }
+	</style>
+	
 	<link rel="stylesheet" href="libs/Calendar/main.css">
 	<div id='calendar'></div>
 	<mrp-calendar-event></mrp-calendar-event>
@@ -35,6 +41,12 @@ class MRPCalendar extends HTMLElement {
 			eventClick: this.eventClick,
 			eventDrop: this.eventMoved,
 			initialDate: '2020-09-12',
+			initialView: 'timeGridWeek',
+			headerToolbar: {
+				left: 'prev,next,today',
+				center: 'title',
+				right: 'timeGridWeek,dayGridMonth' // user can switch between the two
+			},
 			editable: true,
 			selectable: true,
 			businessHours: true,
@@ -48,6 +60,34 @@ class MRPCalendar extends HTMLElement {
 	}
 	render(){
 		this.calendar.render();
+		$(window). innerHeight();
+		var height = $(window). innerHeight();
+		height = height - 300;
+		if(height > 600){
+			height = 600;
+		}
+
+		this.calendar.el.children[1].style.height = height.toString() + 'px';
+
+		//setup the button objects
+		var buttons = this.calendar.el.querySelectorAll('button');
+
+		for (var buttonCounter = 0;buttonCounter<buttons.length;buttonCounter++){
+			if(buttons[buttonCounter].textContent === 'today'){
+				this.todayButton = buttons[buttonCounter];
+			}
+
+			if(buttons[buttonCounter].getAttribute('aria-label') === 'prev'){
+				this.previousButton = buttons[buttonCounter];
+			}
+
+			if(buttons[buttonCounter].getAttribute('aria-label') === 'next'){
+				this.nextButton = buttons[buttonCounter];
+			}
+		}
+	}
+	showToday(){
+		this.todayButton.click();
 	}
 	eventMoved(info){
 		EventBroker.trigger('mrp-calendar-eventMoved', info);
@@ -83,7 +123,6 @@ class MRPCalendar extends HTMLElement {
 		EventBroker.trigger('mrp-calendar-eventClick', info);
 	}
 	handleEventClicked(info){
-		
 		if(this.eventWindow.isShowing){
 			this.eventWindow.close();
 			return false;
@@ -92,13 +131,13 @@ class MRPCalendar extends HTMLElement {
 		var eventID = info.event.id;
 		//info.event.setProp('title',info.event.title + " clicked");
 		var storedEvent = this.eventStorage[eventID];
-		debugger;
 		var calendarEvent = {};
 		calendarEvent.title = storedEvent.title;
 		calendarEvent.description = storedEvent.description;
 		calendarEvent.date = storedEvent.date;
 		calendarEvent.groupId = storedEvent.groupId;
 		calendarEvent.numDays = storedEvent.numDays;
+		calendarEvent.editable = storedEvent.editable;
 		calendarEvent.eventID = eventID;
 		calendarEvent.orgObj = info;
 		
@@ -115,8 +154,12 @@ class MRPCalendar extends HTMLElement {
 		}else{
 			calendarEvent.numEvents = 0;
 		}
-		
-		this.eventWindow.show(calendarEvent);
+
+		if(Lib.JS.isUndefined(calendarEvent.editable) || calendarEvent.editable){
+			this.eventWindow.show(calendarEvent);
+		}
+
+		EventBroker.trigger('calendarEventClicked', calendarEvent);
 
 		// change the border color just for fun
 		//info.el.style.borderColor = 'red';
@@ -127,8 +170,7 @@ class MRPCalendar extends HTMLElement {
 		}
 	}
 	handleEventChange(calendarEvent){		
-		debugger;
-		//An event was changed or created via the event window, now we need to update both the stored events and calendar events		
+		//An event was changed or created via the event window, now we need to update both the stored events and calendar events
 		//check for ID to see if new event of changed event
 		if(Lib.JS.isDefined(calendarEvent.eventID) && !calendarEvent.changeThisEventOnly){
 			
@@ -259,6 +301,11 @@ class MRPCalendar extends HTMLElement {
 		calendarEvent.id = this.eventIDCounter;
 		
 		if(Lib.JS.isUndefined(calendarEvent.date)){
+
+			if(Lib.JS.isUndefined(calendarEvent.start)){
+				calendarEvent.start = calendarEvent.day + "/" + calendarEvent.month + "/" + calendarEvent.year + ":" + calendarEvent.startTime;
+				calendarEvent.end = calendarEvent.day + "/" + calendarEvent.month + "/" + calendarEvent.year + ":" + calendarEvent.endTime;
+			}
 			calendarEvent.date = calendarEvent.start.substr(0,10);
 		}
 		
@@ -296,17 +343,24 @@ class MRPCalendar extends HTMLElement {
 		return date.getFullYear().toString() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
 	}
 	handleClick(event){
-		var target = event.path[0];
+		var path = event.composedPath();
+
+
+		var target = path[0];
 		
 		if(Lib.JS.isUndefined($(target).closest('td')[0])){
+			//check if format changed
+			if(path[0].textContent === 'day'||path[0].textContent === 'month'||path[0].textContent === 'week'||path[0].textContent === 'year'){
+				EventBroker.trigger('mrp-calender_formatChanged');
+			}
+
 			return false;
 		}
-		
-		
+
 		var date = $(target).closest('td')[0].getAttribute('data-date');
 		
 		//check if clicked on existing event
-		if(target.className === "fc-event-title-container" || target.className === "fc-event-title" || target.className ===  "fc-event-title fc-sticky"){
+		if(target.className === "fc-event-title-container" || target.className === "fc-event-title" || target.className ===  "fc-event-title fc-sticky" || target.className ===  "fc-daygrid-event-dot"){
 			//do nothing - clean up later
 		}else{
 			
@@ -314,8 +368,7 @@ class MRPCalendar extends HTMLElement {
 				this.eventWindow.close();
 				return false;
 			}
-		
-			debugger;
+
 			var calendarEvent = {title:'',description:''};
 			calendarEvent.year = date.substring(0,4);
 			calendarEvent.month = date.substring(5,7);
@@ -401,6 +454,21 @@ class MRPCalendar extends HTMLElement {
 			seconds = pieces[2];
 		}
 		return hours + ':' + minutes + ':' + seconds;
+	}
+	getBlankEvent(){
+		var event = {};
+		event.day = '';
+		event.deleteEvent = false;
+		event.description = '';
+		event.endTime = '';
+		event.eventNum = -1;
+		event.month = '';
+		event.numDays = '';
+		event.numRepeats = '';
+		event.startTime = '';
+		event.title = '';
+		event.year = '';
+		return event;
 	}
 }
 

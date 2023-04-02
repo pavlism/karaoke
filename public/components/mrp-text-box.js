@@ -117,13 +117,18 @@ class MRPTextBox extends HTMLElement {
 			event.preventDefault();
 			return false;
 		}
-		
-		this.currentText = event.path[0].value;
+
+		if(Lib.JS.isDefined(event.path)){
+			this.currentText = event.path[0].value;
+		}else{
+			this.currentText = event.target.textBox.value;
+		}
+
 		this._checkValidity();
 		this.value = this.currentText;
-		
-		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
-		
+
+		var triggerObj = {element:this, event:event, newValue:this.currentText};
+
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-text-box_changed',triggerObj);
 		}else if(this['class'] !== ""){

@@ -171,8 +171,11 @@ class MRPCalendarEvent extends HTMLElement {
 		this.shadowRoot.querySelector(".message").textContent = message;
 	}
 	handleClick(event){
+
+		var path = event.composedPath();
+
 		//check if the close button was pressed
-		if(event.path[3] === this.closeButton || event.path[2] === this.closeButton){
+		if(path[3] === this.closeButton || path[2] === this.closeButton){
 			this.close();
 			return false;
 		}

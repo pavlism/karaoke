@@ -101,10 +101,10 @@ class MRPDropDown extends HTMLElement {
 			event.preventDefault();
 			return false;
 		}
-		
-		
+
+		var path = event.composedPath();
 		//if you click on the arrow then blank the text box
-		var relativeLeftPos = event.offsetX - event.path[0].offsetLeft;
+		var relativeLeftPos = event.offsetX - path[0].offsetLeft;
 		var width = this.offsetWidth;
 		
 		if(width - relativeLeftPos < 65 && width - relativeLeftPos > 35){
@@ -202,9 +202,11 @@ class MRPDropDown extends HTMLElement {
 			event.preventDefault();
 			return false;
 		}
-		
-		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
-		this.value = event.path[0].value;
+
+		var path = event.composedPath();
+
+		var triggerObj = {element:this, event:event, newValue:path[0].value};
+		this.value = path[0].value;
 		
 		if(this.searchable){
 			this.selectionIndex = -1;
@@ -215,7 +217,6 @@ class MRPDropDown extends HTMLElement {
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-drop-down_changed',triggerObj);
 			EventBroker.trigger(this,this.events.changed);
-
 		}else if(this['class'] !== ""){
 			EventBroker.trigger(this['class'] + '_mrp-drop-down_changed',triggerObj);
 		}else{
@@ -242,6 +243,15 @@ class MRPDropDown extends HTMLElement {
 		}
 		return -1;
 	}
+	setText(newValue){
+		if(this.value === newValue){
+			return false;
+		}
+
+		this.value = newValue;
+		this.shadowRoot.querySelector("mrp-text-box").setValue(newValue);
+	}
+
 	setValue(newValue){
 		if(this.value === newValue){
 			return false;
