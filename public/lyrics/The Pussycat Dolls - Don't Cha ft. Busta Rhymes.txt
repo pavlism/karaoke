@@ -1,4 +1,4 @@
-{"speed":100,"volume":50,"timming":{"endEarly":0}}
+{"speed":100,"volume":37.5,"timming":{"endEarly":0,"pauses":[]}}
 [Busta Rhymes:]
 OK
 Oh, we about to get it just a lil hot and sweaty in this motherfucker (oh, baby)

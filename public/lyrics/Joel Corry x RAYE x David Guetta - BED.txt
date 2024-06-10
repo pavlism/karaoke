@@ -1,4 +1,4 @@
-{"speed":100,"volume":50,"timming":{"endEarly":0}}
+{"speed":100,"volume":42.5,"timming":{"endEarly":0,"pauses":[]}}
 I got a bed, but I'd rather be in yours, yours
 
 9:05 in the evening

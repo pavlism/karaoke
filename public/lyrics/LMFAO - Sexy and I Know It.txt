@@ -1,4 +1,4 @@
-{"speed":100,"volume":"60","timming":{"endEarly":0}}
+{"speed":100,"volume":60,"timming":{"endEarly":0,"pauses":[]}}
 {Pause30}When I walk on by, girls be looking like damn he fly
 I pimp to the beat, walking on the street in my new LaFreak, yeah
 This is how I roll, animal print pants outta control,

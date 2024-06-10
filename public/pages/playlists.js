@@ -39,7 +39,11 @@ Playlist_template.innerHTML = `
 	</dv>
 `
 class PlaylistPage extends HTMLElement {
-	//TODO
+	//TODO adding a song addis it twice - so does removing it for some reason
+	//TODO first song doesn't seem to wrok
+	//TODO pauses arn't working
+	//TODO moving around makes things broken
+
 
 	//lyrics are sometimes getting saved to the wrong song
 
@@ -287,6 +291,8 @@ class PlaylistPage extends HTMLElement {
 		this.songListDD.addList(this.songList);
 	}
 	addSongToList(){
+
+		debugger;
 		
 		//need to test if the song exists
 		if(!this.songList.includes(this.songListDD.getValue())){

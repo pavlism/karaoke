@@ -1,4 +1,4 @@
-{"speed":100,"volume":92.5,"timming":{"endEarly":0,"startTime":0,"pauses":[]}}
+{"speed":100,"volume":70,"timming":{"endEarly":0,"startTime":0,"pauses":[]}}
 I am a nation, I am a million faces
 Formed together, made for elevation
 I am a soldier, I won't surrender

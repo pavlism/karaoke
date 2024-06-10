@@ -110,11 +110,11 @@ class MRPTextArea extends HTMLElement {
 			return false;
 		}
 		
-		this.currentText = event.path[0].value;
+		this.currentText = this.textArea.value;
 		this._checkValidity();
 		this.value = this.currentText;
 		
-		var triggerObj = {element:this, event:event, newValue:event.path[0].value};
+		var triggerObj = {element:this, event:event, newValue:this.textArea.value};
 		
 		if(this.id !== ""){
 			EventBroker.trigger(this.id + '_mrp-text-area_changed',triggerObj);

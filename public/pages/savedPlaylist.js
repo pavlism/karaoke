@@ -5,6 +5,7 @@ class SavedPlaylistPage extends VideoPlayerPage {
 	//TODO later
 	//play around with screen sizes - did not work well on lap top
 	//have video loading while countdown is playing
+	//should not be pulling for the temp list
 
 	constructor() {
 		super();
